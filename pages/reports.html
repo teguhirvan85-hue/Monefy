@@ -1,0 +1,527 @@
+<div x-data="reportsPage()" x-init="init()" class="absolute inset-0 flex flex-col overflow-y-auto">
+
+  <!-- ===== Top Header ===== -->
+  <header class="w-full bg-white border-b border-g-100 flex items-center justify-between px-4 py-6 shrink-0">
+    <button @click="window.toast('Command palette coming in Phase 7', { type: 'info' })" class="bg-white rounded-full shadow-card flex items-center gap-2 px-3 py-2 w-[238px] hover:shadow-md transition-shadow focus:outline-none focus:ring-2 focus:ring-p-300">
+      <span class="ic ic-16 ic-search text-g-400"></span>
+      <span class="flex-1 text-left text-[14px] font-medium tracking-wide2 text-g-400">Search anything…</span>
+      <kbd class="text-[11px] font-medium bg-g-50 border border-g-100 rounded px-1.5 py-0.5 text-g-400">⌘K</kbd>
+    </button>
+    <div class="flex items-center gap-4">
+      <button class="relative bg-white rounded-full shadow-card p-2.5 flex items-center justify-center hover:bg-g-25 transition-colors focus:outline-none focus:ring-2 focus:ring-p-300">
+        <span class="ic ic-20 ic-bell text-g-900"></span>
+        <span class="absolute top-[11px] right-[11px] w-1.5 h-1.5 rounded-full bg-err-100 border border-white"></span>
+      </button>
+      <div class="vdiv"></div>
+      <button @click="window.openReferral()" class="flex items-center gap-2 h-10 px-3 pr-4 rounded-full text-white text-[14px] font-medium tracking-wide2 border border-g-500 shadow-card hover:brightness-110 transition focus:outline-none focus:ring-2 focus:ring-p-300"
+              style="background-image: linear-gradient(180deg, rgba(255,255,255,0.24) 0%, rgba(255,255,255,0) 100%), linear-gradient(90deg, #163300 0%, #163300 100%);">
+        <span class="ic ic-20 ic-gift text-white"></span>Earn $90
+      </button>
+    </div>
+  </header>
+
+  <!-- ===== Title + Actions ===== -->
+  <section class="w-full border-b border-g-100 flex items-center gap-4 p-4 shrink-0">
+    <div class="flex-1 flex flex-col gap-1 min-w-0">
+      <h1 class="text-[24px] font-semibold leading-[1.3] tracking-tight2 text-g-900">Reports</h1>
+      <p class="text-[14px] text-g-400">Insights and analytics — <span x-text="rangeLabel"></span></p>
+    </div>
+    <div class="flex items-center gap-2">
+      <!-- Compare toggle -->
+      <button @click="compareEnabled = !compareEnabled" class="bg-white border border-g-100 rounded-full shadow-card h-12 px-4 flex items-center gap-2 hover:bg-g-25 transition-colors focus:outline-none focus:ring-2 focus:ring-p-300">
+        <span class="ic ic-16 ic-switch text-g-900"></span>
+        <span class="text-[14px] font-semibold text-g-900">Compare</span>
+        <span class="text-[11px] px-2 py-0.5 rounded-full"
+              :class="compareEnabled ? 'bg-suc-0 text-suc-200 border border-[rgba(64,196,170,0.2)]' : 'bg-g-50 text-g-400 border border-g-100'"
+              x-text="compareEnabled ? 'ON' : 'OFF'"></span>
+      </button>
+      <!-- Date range -->
+      <div class="relative" x-data="{ open: false }" @click.outside="open = false">
+        <button @click="open = !open" class="bg-white border border-g-100 rounded-full shadow-card h-12 px-4 flex items-center gap-2 hover:bg-g-25 transition-colors focus:outline-none focus:ring-2 focus:ring-p-300">
+          <span class="ic ic-20 ic-clipboard text-g-900"></span>
+          <span class="text-[14px] font-semibold text-g-900" x-text="dateRange.label"></span>
+          <span class="ic ic-16 ic-chevron-down text-g-900"></span>
+        </button>
+        <div x-show="open" x-cloak x-transition.opacity class="absolute top-full mt-2 right-0 bg-white border border-g-100 rounded-xl shadow-pop py-1 z-10 min-w-[200px]">
+          <template x-for="r in ranges" :key="r.id">
+            <button @click="dateRange = r; open = false"
+                    class="w-full text-left px-3 py-2 text-[13px] font-medium hover:bg-g-25 transition-colors flex items-center gap-2"
+                    :class="dateRange.id === r.id ? 'text-g-900' : 'text-g-400'">
+              <span class="ic ic-16 ic-check" :style="`opacity: ${dateRange.id === r.id ? 1 : 0}; color: #287F6E`"></span>
+              <span x-text="r.label"></span>
+            </button>
+          </template>
+        </div>
+      </div>
+      <!-- Export -->
+      <button @click="exportReport()" class="bg-p-300 rounded-full h-12 px-4 flex items-center gap-2 hover:bg-p-200 transition-colors focus:outline-none focus:ring-2 focus:ring-s-300">
+        <span class="ic ic-20 ic-download" style="color:#163300"></span>
+        <span class="text-[16px] font-semibold tracking-wide3 text-s-300">Export PDF</span>
+      </button>
+    </div>
+  </section>
+
+  <!-- ===== KPI Row (consistent with Dashboard/Transactions/Wallet stat pattern) ===== -->
+  <section class="w-full px-4 pt-4 grid grid-cols-4 gap-4 shrink-0">
+    <template x-for="k in kpis" :key="k.key">
+      <div class="bg-white rounded-xl shadow-card p-4 flex items-center overflow-hidden">
+        <div class="flex-1 flex flex-col gap-2 min-w-0">
+          <div class="flex items-center gap-3 w-full">
+            <span class="flex-1 text-[14px] font-semibold leading-[1.5] tracking-wide2 text-g-900" x-text="k.label"></span>
+            <button class="w-5 h-5 flex items-center justify-center rounded hover:bg-g-50 transition-colors">
+              <span class="ic ic-16 ic-dots-v text-g-900"></span>
+            </button>
+          </div>
+          <div class="flex items-center gap-2 w-full">
+            <span class="text-[24px] font-semibold leading-[1.3] tracking-tight2 text-g-900 whitespace-nowrap" x-text="k.value"></span>
+            <template x-if="k.change !== null && !k.progress">
+              <span class="h-6 rounded-md px-1 flex items-center justify-center text-[12px] font-semibold leading-[1.5] tracking-wide1 border"
+                    :class="k.change >= 0 ? 'bg-suc-0 border-[rgba(64,196,170,0.2)] text-suc-200' : 'bg-err-0 border-[rgba(223,28,65,0.1)] text-err-200'">
+                <span x-text="(k.change >= 0 ? '+' : '') + k.change.toFixed(1) + '%'"></span>
+              </span>
+            </template>
+            <template x-if="k.progress">
+              <span class="h-6 bg-p-200 border border-[rgba(159,232,112,0.4)] rounded-md px-1 flex items-center justify-center text-[12px] font-semibold tracking-wide1 text-s-300" x-text="'Target ' + k.target"></span>
+            </template>
+          </div>
+        </div>
+      </div>
+    </template>
+  </section>
+
+  <!-- ===== Main charts row (Income vs Expense + Category Donut) ===== -->
+  <section class="w-full px-4 pt-4 grid grid-cols-3 gap-4 shrink-0">
+
+    <!-- Income vs Expense chart (col-span-2) -->
+    <div class="col-span-2 bg-white rounded-xl shadow-card flex flex-col">
+      <div class="flex items-center gap-3 p-4 border-b border-g-100 shrink-0">
+        <div class="flex-1 flex flex-col gap-0.5">
+          <span class="text-[14px] font-semibold tracking-wide2 text-g-900">Cash Flow</span>
+          <span class="text-[12px] text-g-400">Income vs Expense over time</span>
+        </div>
+        <!-- Series toggle -->
+        <div class="bg-g-50 border border-g-100 rounded-lg flex items-center overflow-hidden">
+          <template x-for="s in seriesTabs" :key="s">
+            <button @click="series = s" class="px-3 py-1.5 text-[12px] font-medium transition-colors flex items-center gap-1.5"
+                    :class="series === s ? 'bg-white text-g-900 font-semibold' : 'text-g-400 hover:text-g-900'">
+              <span class="w-2 h-2 rounded-full"
+                    :class="{ 'bg-suc-100': s === 'Income', 'bg-err-100': s === 'Expense', 'bg-g-900': s === 'Both' }"></span>
+              <span x-text="s"></span>
+            </button>
+          </template>
+        </div>
+      </div>
+
+      <!-- Chart area — flex-1 fills card height so chart matches donut card height -->
+      <div class="p-4 flex flex-col gap-3 flex-1 min-h-0">
+        <!-- Legend with totals -->
+        <div class="flex items-center gap-6 shrink-0">
+          <template x-for="s in (series === 'Both' ? ['Income','Expense'] : [series])" :key="s">
+            <div class="flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full" :class="{ 'bg-suc-100': s === 'Income', 'bg-err-100': s === 'Expense' }"></span>
+              <span class="text-[11px] text-g-400 font-medium" x-text="s"></span>
+              <span class="text-[14px] font-semibold text-g-900" x-text="'$' + (s === 'Income' ? totals.income : totals.expense).toLocaleString('en-US', { minimumFractionDigits: 2 })"></span>
+            </div>
+          </template>
+        </div>
+
+        <!-- Chart — fills available height -->
+        <div class="relative flex-1 min-h-[200px] flex">
+          <!-- Y-axis -->
+          <div class="flex flex-col justify-between text-right pr-2 text-[10px] font-medium text-g-400 w-10 pb-5">
+            <span x-text="formatK(chartMax)"></span>
+            <span x-text="formatK(chartMax * 0.75)"></span>
+            <span x-text="formatK(chartMax / 2)"></span>
+            <span x-text="formatK(chartMax * 0.25)"></span>
+            <span>0</span>
+          </div>
+          <!-- Chart canvas -->
+          <div class="flex-1 flex flex-col">
+            <!-- Grid + Bars -->
+            <div class="relative flex-1">
+              <!-- Grid lines -->
+              <div class="absolute inset-0 flex flex-col justify-between pointer-events-none">
+                <div class="grid-line"></div>
+                <div class="grid-line"></div>
+                <div class="grid-line"></div>
+                <div class="grid-line"></div>
+                <div class="grid-line"></div>
+              </div>
+              <!-- Bars -->
+              <div class="absolute inset-0 flex items-end gap-2">
+                <template x-for="(p, i) in chartData" :key="p.month + '_' + i">
+                  <div class="flex-1 h-full flex items-end gap-0.5 group relative">
+                    <!-- Income bar -->
+                    <div class="flex-1 bg-suc-100 rounded-md transition-all hover:opacity-90 cursor-pointer min-h-[2px]"
+                         x-show="series === 'Income' || series === 'Both'"
+                         :style="'height: ' + ((p.income / chartMax) * 100) + '%'"></div>
+                    <!-- Expense bar -->
+                    <div class="flex-1 bg-err-100 rounded-md transition-all hover:opacity-90 cursor-pointer min-h-[2px]"
+                         x-show="series === 'Expense' || series === 'Both'"
+                         :style="'height: ' + ((p.expense / chartMax) * 100) + '%'"></div>
+                    <!-- Hover tooltip — positioned dynamically above tallest bar with arrow pointer -->
+                    <div class="absolute left-1/2 -translate-x-1/2 bg-g-900 text-white text-[11px] rounded-lg shadow-pop px-3 py-2 opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-20"
+                         :style="'bottom: calc(' + Math.min(Math.max((p.income/chartMax)*100, (p.expense/chartMax)*100), 85) + '% + 10px)'">
+                      <div class="font-semibold mb-1 text-[11px]" x-text="p.month + ' ' + p.year"></div>
+                      <div class="flex items-center gap-1.5" x-show="series === 'Income' || series === 'Both'">
+                        <span class="w-1.5 h-1.5 rounded-full bg-suc-100"></span>
+                        <span x-text="'Income: $' + p.income.toLocaleString()"></span>
+                      </div>
+                      <div class="flex items-center gap-1.5" x-show="series === 'Expense' || series === 'Both'">
+                        <span class="w-1.5 h-1.5 rounded-full bg-err-100"></span>
+                        <span x-text="'Expense: $' + p.expense.toLocaleString()"></span>
+                      </div>
+                      <!-- Arrow pointer (downward triangle) -->
+                      <div class="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-g-900 rotate-45"></div>
+                    </div>
+                  </div>
+                </template>
+              </div>
+            </div>
+            <!-- X-axis labels -->
+            <div class="h-5 flex items-center mt-1.5">
+              <template x-for="(p, i) in chartData" :key="i">
+                <span class="flex-1 text-[10px] font-medium text-center text-g-400" x-text="p.month"></span>
+              </template>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== Summary footer stats ===== -->
+      <div class="border-t border-g-100 grid grid-cols-4 shrink-0">
+        <div class="px-4 py-3 border-r border-g-100 flex flex-col gap-0.5">
+          <div class="flex items-center gap-1.5">
+            <span class="w-1.5 h-1.5 rounded-full bg-suc-100"></span>
+            <span class="text-[10px] uppercase tracking-wider text-g-400 font-medium">Avg Income</span>
+          </div>
+          <span class="text-[14px] font-semibold text-g-900" x-text="'$' + Math.round(totals.income / chartData.length).toLocaleString()"></span>
+        </div>
+        <div class="px-4 py-3 border-r border-g-100 flex flex-col gap-0.5">
+          <div class="flex items-center gap-1.5">
+            <span class="w-1.5 h-1.5 rounded-full bg-err-100"></span>
+            <span class="text-[10px] uppercase tracking-wider text-g-400 font-medium">Avg Expense</span>
+          </div>
+          <span class="text-[14px] font-semibold text-g-900" x-text="'$' + Math.round(totals.expense / chartData.length).toLocaleString()"></span>
+        </div>
+        <div class="px-4 py-3 border-r border-g-100 flex flex-col gap-0.5">
+          <span class="text-[10px] uppercase tracking-wider text-g-400 font-medium">Best Month</span>
+          <span class="text-[14px] font-semibold text-g-900" x-text="bestMonth.month + ' · $' + (bestMonth.income - bestMonth.expense).toLocaleString()"></span>
+        </div>
+        <div class="px-4 py-3 flex flex-col gap-0.5">
+          <span class="text-[10px] uppercase tracking-wider text-g-400 font-medium">Highest Income</span>
+          <div class="flex items-center gap-1.5">
+            <span class="text-[14px] font-semibold text-g-900" x-text="'$' + highestIncome.income.toLocaleString()"></span>
+            <span class="text-[11px] text-g-400" x-text="'in ' + highestIncome.month"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Category breakdown donut + legend -->
+    <div class="bg-white rounded-xl shadow-card flex flex-col">
+      <div class="flex items-center gap-3 p-4 border-b border-g-100">
+        <div class="flex-1 flex flex-col gap-0.5">
+          <span class="text-[14px] font-semibold tracking-wide2 text-g-900">By Category</span>
+          <span class="text-[12px] text-g-400">Expense breakdown</span>
+        </div>
+        <button class="text-g-400 hover:text-g-900 transition-colors"><span class="ic ic-16 ic-dots-v"></span></button>
+      </div>
+      <div class="p-4 flex flex-col items-center gap-4">
+        <!-- Donut chart — SVG segments injected via x-html for proper SVG namespace -->
+        <div class="relative w-[160px] h-[160px]">
+          <svg viewBox="0 0 42 42" class="w-full h-full -rotate-90" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="21" cy="21" r="15.915" fill="none" stroke="#F5F5F5" stroke-width="6"/>
+            <g x-html="donutSegmentsSvg"></g>
+          </svg>
+          <!-- Center label -->
+          <div class="absolute inset-0 flex flex-col items-center justify-center">
+            <span class="text-[10px] uppercase tracking-wider text-g-400 font-medium">Total</span>
+            <span class="text-[16px] font-semibold text-g-900" x-text="'$' + totals.expense.toLocaleString('en-US', { maximumFractionDigits: 0 })"></span>
+          </div>
+        </div>
+        <!-- Legend -->
+        <div class="flex flex-col gap-2 w-full">
+          <template x-for="cat in categoryChart" :key="cat.name">
+            <button class="flex items-center gap-2 w-full text-left hover:bg-g-25 rounded-lg p-1.5 transition-colors group">
+              <span class="w-2.5 h-2.5 rounded-full shrink-0" :style="`background: ${cat.color}`"></span>
+              <span class="flex-1 text-[12px] font-medium text-g-900" x-text="cat.name"></span>
+              <span class="text-[12px] font-semibold text-g-900" x-text="cat.pct.toFixed(0) + '%'"></span>
+              <span class="text-[11px] text-g-400 w-16 text-right" x-text="'$' + cat.amount.toLocaleString('en-US', { maximumFractionDigits: 0 })"></span>
+            </button>
+          </template>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== Lower row: Top Merchants + Insights ===== -->
+  <section class="w-full px-4 pt-4 pb-4 grid grid-cols-2 gap-4 shrink-0">
+
+    <!-- Top Merchants -->
+    <div class="bg-white rounded-xl shadow-card flex flex-col">
+      <div class="flex items-center gap-3 p-4 border-b border-g-100">
+        <div class="flex-1 flex flex-col gap-0.5">
+          <span class="text-[14px] font-semibold tracking-wide2 text-g-900">Top Merchants</span>
+          <span class="text-[12px] text-g-400">Where you spend the most</span>
+        </div>
+        <a href="#/transactions" class="text-[12px] text-s-300 font-medium hover:underline">View all →</a>
+      </div>
+      <div class="flex flex-col">
+        <template x-for="(m, i) in topMerchants" :key="m.name">
+          <div class="flex items-center gap-3 px-4 py-3 border-b border-g-100 last:border-0 hover:bg-g-25 transition-colors group">
+            <!-- Rank -->
+            <span class="w-6 h-6 rounded-full bg-g-50 flex items-center justify-center text-[11px] font-bold text-g-400 group-hover:bg-s-300 group-hover:text-white transition-colors shrink-0" x-text="i + 1"></span>
+            <!-- Brand icon -->
+            <template x-if="m.icon">
+              <div class="w-9 h-9 rounded-full overflow-hidden flex items-center justify-center shrink-0" :style="`background: ${m.bg}`">
+                <img :src="m.icon" alt="" class="w-5 h-5" />
+              </div>
+            </template>
+            <template x-if="!m.icon">
+              <div class="w-9 h-9 rounded-full bg-g-50 flex items-center justify-center shrink-0">
+                <span class="text-[12px] font-bold text-g-400" x-text="m.name.charAt(0)"></span>
+              </div>
+            </template>
+            <!-- Info -->
+            <div class="flex-1 min-w-0">
+              <div class="text-[13px] font-semibold text-g-900 truncate" x-text="m.name"></div>
+              <div class="text-[11px] text-g-400" x-text="m.count + ' transaction' + (m.count > 1 ? 's' : '') + ' · ' + m.category"></div>
+            </div>
+            <!-- Amount + bar -->
+            <div class="flex flex-col items-end gap-1 w-[110px] shrink-0">
+              <span class="text-[13px] font-semibold text-g-900" x-text="'- $' + m.amount.toLocaleString('en-US', { minimumFractionDigits: 2 })"></span>
+              <div class="h-1 bg-g-50 rounded-full overflow-hidden w-full">
+                <div class="h-full rounded-full transition-all" :style="`width: ${(m.amount / topMerchants[0].amount) * 100}%; background: ${m.color}`"></div>
+              </div>
+            </div>
+          </div>
+        </template>
+      </div>
+    </div>
+
+    <!-- Insights -->
+    <div class="bg-white rounded-xl shadow-card flex flex-col">
+      <div class="flex items-center gap-3 p-4 border-b border-g-100">
+        <div class="flex-1 flex flex-col gap-0.5">
+          <span class="text-[14px] font-semibold tracking-wide2 text-g-900">Insights & Trends</span>
+          <span class="text-[12px] text-g-400">AI-powered observations</span>
+        </div>
+        <button @click="refreshInsights()" class="w-8 h-8 rounded-full hover:bg-g-50 flex items-center justify-center transition-colors" title="Refresh">
+          <span class="ic ic-16 ic-repeat text-g-900"></span>
+        </button>
+      </div>
+      <div class="flex flex-col p-3 gap-2">
+        <template x-for="ins in insights" :key="ins.id">
+          <a href="#/transactions" class="block rounded-xl p-3 border transition-all hover:shadow-pop hover:-translate-y-0.5 cursor-pointer group"
+             :style="`background: ${ins.bg}; border-color: ${ins.border}`">
+            <div class="flex items-start gap-3">
+              <!-- Icon bubble -->
+              <span class="w-10 h-10 rounded-full flex items-center justify-center text-[18px] shrink-0 transition-transform group-hover:scale-110" :style="`background: ${ins.iconBg}`" x-text="ins.icon"></span>
+              <!-- Content -->
+              <div class="flex-1 min-w-0 flex flex-col gap-1">
+                <!-- Top row: category tag + severity dot -->
+                <div class="flex items-center gap-2">
+                  <span class="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded" :style="`background: ${ins.iconBg}; color: ${ins.actionColor}`" x-text="ins.tag"></span>
+                  <span class="w-1.5 h-1.5 rounded-full" :style="`background: ${ins.actionColor}`"></span>
+                  <span class="text-[10px] font-medium" :style="`color: ${ins.actionColor}`" x-text="ins.severity"></span>
+                </div>
+                <!-- Title -->
+                <div class="text-[13px] font-semibold text-g-900 leading-snug" x-text="ins.title"></div>
+                <!-- Description -->
+                <div class="text-[11.5px] text-g-400 leading-snug" x-text="ins.desc"></div>
+                <!-- Action -->
+                <template x-if="ins.action">
+                  <div class="text-[11px] font-semibold mt-1 inline-flex items-center gap-1" :style="`color: ${ins.actionColor}`">
+                    <span x-text="ins.action"></span>
+                    <span class="transition-transform group-hover:translate-x-0.5">→</span>
+                  </div>
+                </template>
+              </div>
+            </div>
+          </a>
+        </template>
+      </div>
+    </div>
+  </section>
+
+  <!-- Bottom spacing -->
+  <div class="h-2 shrink-0"></div>
+</div>
+
+<script>
+  function reportsPage() {
+    return {
+      // State
+      compareEnabled: true,
+      series: 'Both',
+      seriesTabs: ['Income', 'Expense', 'Both'],
+      ranges: [
+        { id: '1M', label: 'Last month' },
+        { id: '3M', label: 'Last 3 months' },
+        { id: '6M', label: 'Last 6 months' },
+        { id: 'YTD', label: 'Year to date' },
+        { id: '1Y', label: 'Last 12 months' },
+      ],
+      dateRange: { id: '6M', label: 'Last 6 months' },
+
+      init() {
+        // Pre-seeded data, but recompute on range change in real app
+      },
+
+      get rangeLabel() {
+        return this.dateRange.label;
+      },
+      get comparePeriod() {
+        return this.compareEnabled ? 'previous period' : 'last year';
+      },
+
+      // ---------- Chart data ----------
+      get chartData() {
+        // Income vs Expense per month
+        const all = {
+          '1M': [ { month:'W1',year:'',income:850, expense:380 }, { month:'W2',year:'',income:1100,expense:540 }, { month:'W3',year:'',income:920,expense:610 }, { month:'W4',year:'',income:1330,expense:720 } ],
+          '3M': [ { month:'Jun',year:'2024',income:4200,expense:2100 }, { month:'Jul',year:'2024',income:5500,expense:3300 }, { month:'Aug',year:'2024',income:4180,expense:2900 } ],
+          '6M': [
+            { month:'Mar',year:'2024',income:4200,expense:2100 },
+            { month:'Apr',year:'2024',income:5500,expense:3200 },
+            { month:'May',year:'2024',income:4800,expense:2700 },
+            { month:'Jun',year:'2024',income:4200,expense:2100 },
+            { month:'Jul',year:'2024',income:5500,expense:3300 },
+            { month:'Aug',year:'2024',income:4180,expense:2900 },
+          ],
+          'YTD': [
+            { month:'Jan',year:'2024',income:3800,expense:1900 },
+            { month:'Feb',year:'2024',income:4100,expense:2200 },
+            { month:'Mar',year:'2024',income:4200,expense:2100 },
+            { month:'Apr',year:'2024',income:5500,expense:3200 },
+            { month:'May',year:'2024',income:4800,expense:2700 },
+            { month:'Jun',year:'2024',income:4200,expense:2100 },
+            { month:'Jul',year:'2024',income:5500,expense:3300 },
+            { month:'Aug',year:'2024',income:4180,expense:2900 },
+          ],
+          '1Y': [
+            { month:'Sep',year:'2023',income:3500,expense:1800 },
+            { month:'Oct',year:'2023',income:3700,expense:1950 },
+            { month:'Nov',year:'2023',income:4100,expense:2300 },
+            { month:'Dec',year:'2023',income:4900,expense:3100 },
+            { month:'Jan',year:'2024',income:3800,expense:1900 },
+            { month:'Feb',year:'2024',income:4100,expense:2200 },
+            { month:'Mar',year:'2024',income:4200,expense:2100 },
+            { month:'Apr',year:'2024',income:5500,expense:3200 },
+            { month:'May',year:'2024',income:4800,expense:2700 },
+            { month:'Jun',year:'2024',income:4200,expense:2100 },
+            { month:'Jul',year:'2024',income:5500,expense:3300 },
+            { month:'Aug',year:'2024',income:4180,expense:2900 },
+          ],
+        };
+        return all[this.dateRange.id] || all['6M'];
+      },
+      get chartMax() {
+        const m = Math.max(...this.chartData.map(p => Math.max(p.income, p.expense)));
+        const pow = Math.pow(10, Math.floor(Math.log10(m)));
+        const n = m / pow;
+        let nice = n <= 1 ? 1 : n <= 2 ? 2 : n <= 5 ? 5 : 10;
+        return nice * pow;
+      },
+      get totals() {
+        return {
+          income:  this.chartData.reduce((s, p) => s + p.income, 0),
+          expense: this.chartData.reduce((s, p) => s + p.expense, 0),
+        };
+      },
+      get bestMonth() {
+        return this.chartData.reduce((best, p) =>
+          (p.income - p.expense) > (best.income - best.expense) ? p : best
+        , this.chartData[0]);
+      },
+      get highestIncome() {
+        return this.chartData.reduce((max, p) => p.income > max.income ? p : max, this.chartData[0]);
+      },
+      get kpis() {
+        const inc = this.totals.income, exp = this.totals.expense, net = inc - exp;
+        const saveRate = inc ? Math.round((net / inc) * 100) : 0;
+        return [
+          { key:'inc', label:'Income', value:'$' + inc.toLocaleString('en-US', { maximumFractionDigits: 0 }), change: 12.4, icon:'ic-arrow-down', iconColor:'#287F6E', iconBg:'#EFFEFA' },
+          { key:'exp', label:'Expense', value:'$' + exp.toLocaleString('en-US', { maximumFractionDigits: 0 }), change: -3.8, icon:'ic-arrow-up', iconColor:'#95122B', iconBg:'#FEEFF2' },
+          { key:'net', label:'Net Cash Flow', value:'$' + net.toLocaleString('en-US', { maximumFractionDigits: 0 }), change: 22.1, icon:'ic-bar-chart', iconColor:'#163300', iconBg:'#B2ED8D' },
+          { key:'sav', label:'Save Rate', value: saveRate + '%', change: null, progress: saveRate, target: '50%', icon:'ic-star', iconColor:'#936DFF', iconBg:'#F4F0FF' },
+        ];
+      },
+
+      // ---------- Category breakdown ----------
+      get categoryChart() {
+        // Harmonized palette: primary brand colors first (largest cats),
+        // accent colors for smaller cats. All on-brand with design system tokens.
+        const cats = [
+          { name:'Shopping',     amount: 2480, color:'#163300' }, // Secondary 300 — dark green (largest, most weight)
+          { name:'Food',         amount: 1340, color:'#9FE870' }, // Primary 300 — signature brand green
+          { name:'Transfer',     amount:  670, color:'#40C4AA' }, // Success 100 — teal
+          { name:'Subscription', amount:  450, color:'#936DFF' }, // Portage 100 — purple
+          { name:'Other',        amount:  300, color:'#A3A3A3' }, // Greyscale 300 — neutral
+          { name:'Transport',    amount:  280, color:'#FFB200' }, // Amber — warm accent
+        ].sort((a, b) => b.amount - a.amount);
+        const total = cats.reduce((s, c) => s + c.amount, 0);
+        let offset = 0;
+        return cats.map(c => {
+          const pct = (c.amount / total) * 100;
+          const out = { ...c, pct, offset };
+          offset += pct;
+          return out;
+        });
+      },
+      // SVG string for donut segments (avoids Alpine x-for namespace issues inside SVG)
+      get donutSegmentsSvg() {
+        return this.categoryChart.map(c =>
+          `<circle cx="21" cy="21" r="15.915" fill="none" stroke="${c.color}" stroke-width="6" stroke-dasharray="${c.pct.toFixed(3)} ${(100 - c.pct).toFixed(3)}" stroke-dashoffset="${(-c.offset).toFixed(3)}" style="transition:all .2s"/>`
+        ).join('');
+      },
+
+      // ---------- Top Merchants ----------
+      get topMerchants() {
+        return [
+          { name:'Apple Store',  amount: 1299.00, count: 1, category:'Shopping',     icon:'assets/spotify.svg', bg:'rgba(0,0,0,0.1)',     color:'#0A0A0A' },
+          { name:'Amazon',       amount:  574.20, count: 4, category:'Shopping',     icon:'assets/upwork.svg',  bg:'#FF9900',             color:'#FF9900' },
+          { name:'Whole Foods',  amount:  389.50, count: 5, category:'Food',         icon:'assets/upwork.svg',  bg:'rgba(0,128,0,0.1)',   color:'#287F6E' },
+          { name:'Netflix',      amount:   75.00, count: 3, category:'Subscription', icon:'assets/netflix.svg', bg:'rgba(223,13,18,0.1)', color:'#DF1C41' },
+          { name:'Uber',         amount:   62.80, count: 4, category:'Transport',    icon:'assets/netflix.svg', bg:'rgba(0,0,0,0.1)',     color:'#0A0A0A' },
+          { name:'Spotify',      amount:   29.97, count: 3, category:'Subscription', icon:'assets/spotify.svg', bg:'rgba(0,218,90,0.1)',  color:'#40C4AA' },
+        ];
+      },
+
+      // ---------- Insights ----------
+      insightsList: [
+        { id:1, icon:'🍔', tag:'Spending', severity:'Attention', title:'Food spending is up 32%', desc:'You spent $1,340 on food this month — 32% more than last month. Consider meal planning to save up to $200.', bg:'#FFF7E5', border:'rgba(255,170,0,0.25)', iconBg:'#FFEFC7', action:'Review food expenses', actionColor:'#B8860B' },
+        { id:2, icon:'💰', tag:'Savings',  severity:'On track',  title:'You\'re on track to save $5,200', desc:'At your current pace, you\'ll exceed your save rate target by 8% this quarter. Great job!', bg:'#EFFEFA', border:'rgba(64,196,170,0.25)', iconBg:'#D4F7EE', action:'View savings progress', actionColor:'#287F6E' },
+        { id:3, icon:'📅', tag:'Bills',    severity:'Upcoming',  title:'3 subscriptions renew this week', desc:'Netflix ($25), Spotify ($9.99), and Figma ($12) total $46.99 due within 7 days.', bg:'#F4F0FF', border:'rgba(147,109,255,0.25)', iconBg:'#E9E2FF', action:'Manage subscriptions', actionColor:'#936DFF' },
+        { id:4, icon:'⚠️', tag:'Security', severity:'Action needed', title:'Unusual transaction detected', desc:'A $1,299 charge from Apple Store is 6× higher than your typical shopping transaction.', bg:'#FEEFF2', border:'rgba(223,28,65,0.25)', iconBg:'#FCDCE0', action:'Review transaction', actionColor:'#95122B' },
+      ],
+      get insights() { return this.insightsList; },
+
+      refreshInsights() {
+        // Mock shuffle
+        this.insightsList = [...this.insightsList].reverse();
+        window.toast('Insights refreshed', { type: 'info' });
+      },
+
+      // ---------- Helpers ----------
+      formatK(v) {
+        if (v >= 1000) {
+          const k = v / 1000;
+          return '$' + (k >= 10 ? k.toFixed(0) : k.toFixed(1).replace('.0','')) + 'K';
+        }
+        return '$' + Math.round(v);
+      },
+      exportReport() {
+        const rows = [['Month','Income','Expense','Net']];
+        this.chartData.forEach(p => rows.push([p.month + ' ' + p.year, p.income, p.expense, p.income - p.expense]));
+        const csv = rows.map(r => r.map(c => `"${c}"`).join(',')).join('\n');
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a'); a.href = url; a.download = 'report-' + this.dateRange.id + '-' + Date.now() + '.csv'; a.click();
+        URL.revokeObjectURL(url);
+        window.toast('Report exported as CSV');
+      },
+    }
+  }
+</script>

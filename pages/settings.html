@@ -1,0 +1,1038 @@
+<div x-data="settingsPage()" x-init="init()" class="absolute inset-0 flex flex-col">
+
+  <!-- ===== Top Header ===== -->
+  <header class="w-full bg-white border-b border-g-100 flex items-center justify-between px-4 py-6 shrink-0">
+    <button @click="window.toast('Command palette coming in Phase 7', { type: 'info' })" class="bg-white rounded-full shadow-card flex items-center gap-2 px-3 py-2 w-[238px] hover:shadow-md transition-shadow focus:outline-none focus:ring-2 focus:ring-p-300">
+      <span class="ic ic-16 ic-search text-g-400"></span>
+      <span class="flex-1 text-left text-[14px] font-medium tracking-wide2 text-g-400">Search anything…</span>
+      <kbd class="text-[11px] font-medium bg-g-50 border border-g-100 rounded px-1.5 py-0.5 text-g-400">⌘K</kbd>
+    </button>
+    <div class="flex items-center gap-4">
+      <button class="relative bg-white rounded-full shadow-card p-2.5 hover:bg-g-25 transition-colors focus:outline-none focus:ring-2 focus:ring-p-300">
+        <span class="ic ic-20 ic-bell text-g-900"></span>
+        <span class="absolute top-[11px] right-[11px] w-1.5 h-1.5 rounded-full bg-err-100 border border-white"></span>
+      </button>
+      <div class="vdiv"></div>
+      <button @click="window.openReferral()" class="flex items-center gap-2 h-10 px-3 pr-4 rounded-full text-white text-[14px] font-medium tracking-wide2 border border-g-500 shadow-card hover:brightness-110 transition focus:outline-none focus:ring-2 focus:ring-p-300"
+              style="background-image: linear-gradient(180deg, rgba(255,255,255,0.24) 0%, rgba(255,255,255,0) 100%), linear-gradient(90deg, #163300 0%, #163300 100%);">
+        <span class="ic ic-20 ic-gift text-white"></span>Earn $90
+      </button>
+    </div>
+  </header>
+
+  <!-- ===== Title + Save Indicator ===== -->
+  <section class="w-full border-b border-g-100 flex items-center gap-4 p-4 shrink-0">
+    <div class="flex-1 flex flex-col gap-1 min-w-0">
+      <h1 class="text-[24px] font-semibold leading-[1.3] tracking-tight2 text-g-900">Settings</h1>
+      <p class="text-[14px] text-g-400">Manage your account, security, and preferences</p>
+    </div>
+    <template x-if="lastSaved">
+      <div class="text-[12px] text-g-400 flex items-center gap-1.5">
+        <span class="ic ic-16 ic-check text-suc-200"></span>
+        <span x-text="'Saved · ' + lastSaved"></span>
+      </div>
+    </template>
+  </section>
+
+  <!-- ===== Body: Left Nav + Content ===== -->
+  <section class="flex-1 flex min-h-0">
+    <!-- Left nav -->
+    <aside class="w-[240px] bg-g-25 border-r border-g-100 p-4 flex flex-col gap-1 shrink-0 overflow-y-auto">
+      <template x-for="nav in navItems" :key="nav.id">
+        <button @click="activeTab = nav.id; lastSaved = null"
+                class="set-nav-item"
+                :class="activeTab === nav.id ? 'active' : ''">
+          <span class="ic ic-16" :class="nav.icon" style="color: currentColor"></span>
+          <span class="flex-1" x-text="nav.label"></span>
+          <template x-if="nav.badge">
+            <span class="text-[10px] font-bold px-1.5 py-0.5 rounded-full" :style="`background: ${nav.badgeBg}; color: ${nav.badgeColor}`" x-text="nav.badge"></span>
+          </template>
+        </button>
+      </template>
+      <div class="border-t border-g-100 my-3"></div>
+      <button @click="confirmSignOut()" class="set-nav-item" style="color: #95122B">
+        <span class="ic ic-16 ic-switch" style="color: #95122B"></span>
+        <span class="flex-1">Sign out</span>
+      </button>
+    </aside>
+
+    <!-- Main content area -->
+    <div class="flex-1 overflow-y-auto">
+
+      <!-- ============ PROFILE TAB ============ -->
+      <div x-show="activeTab === 'profile'" class="p-4 grid grid-cols-[1fr_320px] gap-4">
+        <!-- Main column -->
+        <div class="flex flex-col gap-4 min-w-0">
+          <header>
+            <h2 class="text-[18px] font-semibold text-g-900">Profile</h2>
+            <p class="text-[13px] text-g-400 mt-1">This information will be displayed on your account.</p>
+          </header>
+
+          <!-- Avatar -->
+          <div class="bg-white rounded-xl shadow-card p-4 flex items-center gap-4">
+            <img src="assets/avatar-kristin-big.jpg" alt="" class="w-20 h-20 rounded-full object-cover ring-2 ring-g-100" />
+            <div class="flex-1 min-w-0">
+              <div class="text-[14px] font-semibold text-g-900">Profile photo</div>
+              <div class="text-[12px] text-g-400 mt-0.5">PNG or JPG, max 2MB</div>
+            </div>
+            <button @click="window.toast('Upload coming soon', { type: 'info' })" class="px-4 h-10 rounded-full bg-white border border-g-100 hover:bg-g-25 text-[13px] font-semibold text-g-900 transition-colors">Upload</button>
+            <button @click="window.toast('Photo removed', { type: 'info' })" class="px-4 h-10 rounded-full hover:bg-g-25 text-[13px] font-semibold text-err-200 transition-colors">Remove</button>
+          </div>
+
+          <!-- Personal info form -->
+          <div class="bg-white rounded-xl shadow-card p-4 flex flex-col gap-4">
+            <div class="grid grid-cols-2 gap-4">
+              <div><label class="form-label">First name</label><input type="text" class="form-input" x-model="profile.firstName" @input="dirty.profile = true"/></div>
+              <div><label class="form-label">Last name</label><input type="text" class="form-input" x-model="profile.lastName" @input="dirty.profile = true"/></div>
+            </div>
+            <div><label class="form-label">Email address</label><input type="email" class="form-input" x-model="profile.email" @input="dirty.profile = true"/><p class="form-hint">Used for account recovery and statements</p></div>
+            <div class="grid grid-cols-2 gap-4">
+              <div><label class="form-label">Phone number</label><input type="tel" class="form-input" x-model="profile.phone" @input="dirty.profile = true"/></div>
+              <div><label class="form-label">Date of birth</label><input type="date" class="form-input" x-model="profile.dob" @input="dirty.profile = true"/></div>
+            </div>
+            <div><label class="form-label">Address</label><textarea class="form-input form-textarea" x-model="profile.address" @input="dirty.profile = true"></textarea></div>
+            <div><label class="form-label">Bio</label><textarea class="form-input form-textarea" placeholder="Tell us about yourself…" x-model="profile.bio" @input="dirty.profile = true"></textarea></div>
+          </div>
+        </div>
+
+        <!-- Right sidebar -->
+        <aside class="flex flex-col gap-4">
+          <!-- Profile preview card -->
+          <div class="bg-white rounded-xl shadow-card overflow-hidden">
+            <div class="p-4 flex flex-col items-center text-center gap-2" style="background: linear-gradient(135deg, #B2ED8D 0%, #9FE870 100%);">
+              <img src="assets/avatar-kristin-big.jpg" alt="" class="w-16 h-16 rounded-full object-cover ring-4 ring-white" />
+              <div class="text-[15px] font-semibold text-s-300" x-text="profile.firstName + ' ' + profile.lastName"></div>
+              <div class="text-[12px] text-s-300/80 truncate w-full" x-text="profile.email"></div>
+            </div>
+            <div class="p-4 flex flex-col gap-3">
+              <div class="flex items-center gap-2">
+                <span class="text-[11px] uppercase tracking-wider text-g-400 font-medium flex-1">Profile completion</span>
+                <span class="text-[11px] font-bold text-s-300" x-text="profileCompletion + '%'"></span>
+              </div>
+              <div class="h-1.5 bg-g-50 rounded-full overflow-hidden">
+                <div class="h-full bg-p-300 rounded-full transition-all" :style="'width:' + profileCompletion + '%'"></div>
+              </div>
+              <p class="text-[11px] text-g-400" x-text="profileCompletion === 100 ? 'All set! Your profile is complete.' : 'Add a bio and date of birth to reach 100%'"></p>
+            </div>
+          </div>
+          <!-- Account info -->
+          <div class="bg-white rounded-xl shadow-card p-4 flex flex-col gap-3">
+            <div class="text-[12px] uppercase tracking-wider text-g-400 font-medium">Account info</div>
+            <div class="flex items-center gap-3"><span class="text-[12px] text-g-400 flex-1">Member since</span><span class="text-[13px] font-semibold text-g-900">Mar 14, 2023</span></div>
+            <div class="flex items-center gap-3"><span class="text-[12px] text-g-400 flex-1">Account ID</span><span class="text-[13px] font-mono font-medium text-g-900">MNF-78240</span></div>
+            <div class="flex items-center gap-3"><span class="text-[12px] text-g-400 flex-1">Status</span><span class="text-[10px] font-bold rounded-full px-2 py-0.5 bg-suc-0 border border-[rgba(64,196,170,0.2)] text-suc-200">VERIFIED</span></div>
+            <div class="flex items-center gap-3"><span class="text-[12px] text-g-400 flex-1">Region</span><span class="text-[13px] font-medium text-g-900">🇺🇸 United States</span></div>
+          </div>
+          <!-- Help tip -->
+          <div class="bg-[#F4F0FF] border border-por-25 rounded-xl p-4 flex flex-col gap-2">
+            <div class="flex items-center gap-2">
+              <span class="text-[16px]">💡</span>
+              <span class="text-[12px] font-semibold text-por-100">Tip</span>
+            </div>
+            <p class="text-[12px] text-g-900 leading-snug">Keep your profile updated — your name and email appear on receipts and invoices sent to clients.</p>
+          </div>
+        </aside>
+      </div>
+
+      <!-- ============ SECURITY TAB ============ -->
+      <div x-show="activeTab === 'security'" class="p-4 grid grid-cols-[1fr_320px] gap-4">
+        <div class="flex flex-col gap-4 min-w-0">
+        <header>
+          <h2 class="text-[18px] font-semibold text-g-900">Security</h2>
+          <p class="text-[13px] text-g-400 mt-1">Keep your account safe with strong protection.</p>
+        </header>
+
+        <!-- Password -->
+        <div class="bg-white rounded-xl shadow-card p-4 flex items-center gap-4">
+          <div class="w-10 h-10 rounded-full bg-g-25 flex items-center justify-center">
+            <span class="ic ic-20 ic-settings text-g-900"></span>
+          </div>
+          <div class="flex-1">
+            <div class="text-[14px] font-semibold text-g-900">Password</div>
+            <div class="text-[12px] text-g-400 mt-0.5">Last changed 3 months ago · <span class="text-suc-200 font-medium">Strong</span></div>
+          </div>
+          <button @click="changePasswordOpen = true" class="px-4 h-10 rounded-full bg-white border border-g-100 hover:bg-g-25 text-[13px] font-semibold text-g-900 transition-colors">Change</button>
+        </div>
+
+        <!-- Toggles list -->
+        <div class="bg-white rounded-xl shadow-card flex flex-col">
+          <template x-for="(t, idx) in securityToggles" :key="t.key">
+            <div class="flex items-center gap-4 p-4" :class="idx < securityToggles.length - 1 ? 'border-b border-g-100' : ''">
+              <div class="w-10 h-10 rounded-full flex items-center justify-center shrink-0" :style="`background: ${t.iconBg}`">
+                <span class="ic ic-20" :class="t.icon" :style="`color: ${t.iconColor}`"></span>
+              </div>
+              <div class="flex-1 min-w-0">
+                <div class="text-[14px] font-semibold text-g-900" x-text="t.title"></div>
+                <div class="text-[12px] text-g-400 mt-0.5" x-text="t.desc"></div>
+              </div>
+              <div @click="t.on = !t.on; window.toast(t.title + (t.on ? ' enabled' : ' disabled'), { type: t.on ? 'success' : 'info', duration: 1500 })"
+                   class="tgl" :class="t.on ? 'on' : ''" :title="t.on ? 'Disable' : 'Enable'"></div>
+            </div>
+          </template>
+        </div>
+
+        <!-- Active sessions -->
+        <div class="bg-white rounded-xl shadow-card flex flex-col">
+          <div class="p-4 border-b border-g-100 flex items-center gap-3">
+            <div class="flex-1">
+              <div class="text-[14px] font-semibold text-g-900">Active sessions</div>
+              <div class="text-[12px] text-g-400 mt-0.5" x-text="sessions.length + ' devices signed in'"></div>
+            </div>
+            <button @click="signOutAll()" class="px-3 h-9 rounded-full hover:bg-err-0 text-[12px] font-semibold text-err-200 transition-colors">Sign out all</button>
+          </div>
+          <template x-for="s in sessions" :key="s.id">
+            <div class="flex items-center gap-3 p-4 border-b border-g-100 last:border-0">
+              <div class="w-9 h-9 rounded-full bg-g-25 flex items-center justify-center shrink-0">
+                <span class="text-[16px]" x-text="s.icon"></span>
+              </div>
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2">
+                  <span class="text-[14px] font-semibold text-g-900 truncate" x-text="s.device"></span>
+                  <template x-if="s.current"><span class="bg-suc-0 border border-[rgba(64,196,170,0.2)] text-suc-200 text-[10px] font-bold rounded-full px-1.5 py-0.5">CURRENT</span></template>
+                </div>
+                <div class="text-[11px] text-g-400 mt-0.5" x-text="s.location + ' · ' + s.lastActive"></div>
+              </div>
+              <button x-show="!s.current" @click="signOutSession(s.id)" class="px-3 h-9 rounded-full hover:bg-g-25 text-[12px] font-semibold text-g-900 transition-colors">Sign out</button>
+            </div>
+          </template>
+        </div>
+        </div>
+
+        <!-- Right sidebar: Security score & tips -->
+        <aside class="flex flex-col gap-4">
+          <!-- Security score -->
+          <div class="bg-white rounded-xl shadow-card p-4 flex flex-col gap-3">
+            <div class="flex items-center gap-2">
+              <span class="text-[12px] uppercase tracking-wider text-g-400 font-medium flex-1">Security score</span>
+              <span class="text-[10px] font-bold rounded-full px-2 py-0.5 bg-suc-0 border border-[rgba(64,196,170,0.2)] text-suc-200">STRONG</span>
+            </div>
+            <div class="flex items-baseline gap-2">
+              <span class="text-[36px] font-semibold tracking-tight2 text-g-900 leading-none" x-text="securityScore"></span>
+              <span class="text-[13px] text-g-400">/ 100</span>
+            </div>
+            <div class="h-2 bg-g-50 rounded-full overflow-hidden">
+              <div class="h-full rounded-full transition-all" :style="'width: ' + securityScore + '%; background: ' + (securityScore >= 80 ? '#40C4AA' : securityScore >= 50 ? '#FFA500' : '#DF1C41')"></div>
+            </div>
+            <p class="text-[12px] text-g-400 leading-snug">Your account is well-protected. Enable hiding balance on lock screen to reach 100%.</p>
+          </div>
+
+          <!-- Security checklist -->
+          <div class="bg-white rounded-xl shadow-card flex flex-col">
+            <div class="p-4 border-b border-g-100">
+              <div class="text-[12px] uppercase tracking-wider text-g-400 font-medium">Checklist</div>
+            </div>
+            <template x-for="(item, i) in securityChecklist" :key="i">
+              <div class="flex items-center gap-3 px-4 py-3 border-b border-g-100 last:border-0">
+                <span class="w-5 h-5 rounded-full flex items-center justify-center shrink-0" :style="`background: ${item.done ? '#EFFEFA' : '#F5F5F5'}`">
+                  <span class="ic ic-16" :class="item.done ? 'ic-check' : 'ic-plus'" :style="`color: ${item.done ? '#287F6E' : '#A3A3A3'}; -webkit-mask-size: 10px; mask-size: 10px;`"></span>
+                </span>
+                <span class="flex-1 text-[12px] font-medium" :class="item.done ? 'text-g-400 line-through' : 'text-g-900'" x-text="item.label"></span>
+              </div>
+            </template>
+          </div>
+
+          <!-- Last login info -->
+          <div class="bg-white rounded-xl shadow-card p-4 flex flex-col gap-3">
+            <div class="text-[12px] uppercase tracking-wider text-g-400 font-medium">Recent activity</div>
+            <div class="flex items-start gap-2">
+              <span class="w-1.5 h-1.5 rounded-full bg-suc-100 mt-1.5 shrink-0"></span>
+              <div class="flex-1">
+                <div class="text-[12px] font-medium text-g-900">Successful login</div>
+                <div class="text-[11px] text-g-400">San Francisco · Active now</div>
+              </div>
+            </div>
+            <div class="flex items-start gap-2">
+              <span class="w-1.5 h-1.5 rounded-full bg-g-300 mt-1.5 shrink-0"></span>
+              <div class="flex-1">
+                <div class="text-[12px] font-medium text-g-900">Password unchanged</div>
+                <div class="text-[11px] text-g-400">3 months ago</div>
+              </div>
+            </div>
+            <div class="flex items-start gap-2">
+              <span class="w-1.5 h-1.5 rounded-full bg-g-300 mt-1.5 shrink-0"></span>
+              <div class="flex-1">
+                <div class="text-[12px] font-medium text-g-900">2FA enabled</div>
+                <div class="text-[11px] text-g-400">5 months ago</div>
+              </div>
+            </div>
+          </div>
+        </aside>
+      </div>
+
+      <!-- ============ PREFERENCES TAB ============ -->
+      <div x-show="activeTab === 'preferences'" class="p-4 grid grid-cols-[1fr_320px] gap-4">
+        <div class="flex flex-col gap-4 min-w-0">
+        <header>
+          <h2 class="text-[18px] font-semibold text-g-900">Preferences</h2>
+          <p class="text-[13px] text-g-400 mt-1">Customize how Monefy works for you.</p>
+        </header>
+
+        <div class="bg-white rounded-xl shadow-card p-4 flex flex-col gap-4">
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="form-label">Default currency</label>
+              <select class="form-select" x-model="prefs.currency" @change="dirty.prefs = true">
+                <option value="USD">USD — US Dollar</option><option value="EUR">EUR — Euro</option>
+                <option value="GBP">GBP — British Pound</option><option value="IDR">IDR — Indonesian Rupiah</option>
+                <option value="JPY">JPY — Japanese Yen</option><option value="SGD">SGD — Singapore Dollar</option>
+              </select>
+            </div>
+            <div>
+              <label class="form-label">Language</label>
+              <select class="form-select" x-model="prefs.language" @change="dirty.prefs = true">
+                <option value="en">English</option><option value="id">Bahasa Indonesia</option>
+                <option value="es">Español</option><option value="fr">Français</option><option value="ja">日本語</option>
+              </select>
+            </div>
+            <div>
+              <label class="form-label">Timezone</label>
+              <select class="form-select" x-model="prefs.timezone" @change="dirty.prefs = true">
+                <option>(UTC-08:00) Pacific Time</option><option>(UTC-05:00) Eastern Time</option>
+                <option>(UTC+00:00) UTC</option><option>(UTC+01:00) Central European Time</option>
+                <option>(UTC+07:00) Jakarta</option><option>(UTC+09:00) Tokyo</option>
+              </select>
+            </div>
+            <div>
+              <label class="form-label">Date format</label>
+              <select class="form-select" x-model="prefs.dateFormat" @change="dirty.prefs = true">
+                <option>MM/DD/YYYY</option><option>DD/MM/YYYY</option><option>YYYY-MM-DD</option>
+              </select>
+            </div>
+            <div>
+              <label class="form-label">Number format</label>
+              <select class="form-select" x-model="prefs.numFormat" @change="dirty.prefs = true">
+                <option>1,234.56 (en-US)</option><option>1.234,56 (de-DE)</option><option>1 234,56 (fr-FR)</option>
+              </select>
+            </div>
+            <div>
+              <label class="form-label">Week starts on</label>
+              <select class="form-select" x-model="prefs.weekStart" @change="dirty.prefs = true">
+                <option>Sunday</option><option>Monday</option><option>Saturday</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Theme -->
+        <div class="bg-white rounded-xl shadow-card p-4 flex items-center gap-4">
+          <div class="w-10 h-10 rounded-full bg-g-25 flex items-center justify-center">
+            <span class="text-[16px]">☀️</span>
+          </div>
+          <div class="flex-1">
+            <div class="text-[14px] font-semibold text-g-900">Appearance</div>
+            <div class="text-[12px] text-g-400 mt-0.5">Light mode only — dark mode coming soon</div>
+          </div>
+          <div class="tgl disabled" title="Dark mode disabled"></div>
+        </div>
+        </div>
+
+        <!-- Right sidebar: Format preview -->
+        <aside class="flex flex-col gap-4">
+          <div class="bg-white rounded-xl shadow-card p-4 flex flex-col gap-3">
+            <div class="text-[12px] uppercase tracking-wider text-g-400 font-medium">Format preview</div>
+            <div class="flex flex-col gap-3 pt-1">
+              <div>
+                <div class="text-[10px] text-g-400 uppercase tracking-wider">Sample amount</div>
+                <div class="text-[20px] font-semibold tracking-tight2 text-g-900 mt-1" x-text="previewAmount"></div>
+              </div>
+              <div class="border-t border-g-100 pt-3">
+                <div class="text-[10px] text-g-400 uppercase tracking-wider">Sample date</div>
+                <div class="text-[14px] font-medium text-g-900 mt-1" x-text="previewDate"></div>
+              </div>
+              <div class="border-t border-g-100 pt-3">
+                <div class="text-[10px] text-g-400 uppercase tracking-wider">Currency symbol</div>
+                <div class="text-[14px] font-medium text-g-900 mt-1" x-text="currencySymbol + ' · ' + prefs.currency"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-[#EFFEFA] border border-[rgba(64,196,170,0.25)] rounded-xl p-4 flex flex-col gap-2">
+            <div class="flex items-center gap-2">
+              <span class="text-[16px]">🌍</span>
+              <span class="text-[12px] font-semibold text-suc-200">Regional formats</span>
+            </div>
+            <p class="text-[12px] text-g-900 leading-snug">Your selected currency and language affect how amounts, dates, and numbers display across the entire app.</p>
+          </div>
+
+          <!-- Reset to defaults -->
+          <button @click="resetPreferences()" class="bg-white rounded-xl shadow-card p-4 flex items-center gap-3 hover:bg-g-25 transition-colors group">
+            <span class="w-9 h-9 rounded-full bg-g-25 flex items-center justify-center"><span class="ic ic-16 ic-repeat text-g-900"></span></span>
+            <div class="flex-1 text-left">
+              <div class="text-[13px] font-semibold text-g-900">Reset to defaults</div>
+              <div class="text-[11px] text-g-400 mt-0.5">Restore US English regional settings</div>
+            </div>
+            <span class="ic ic-16 ic-chevron-right text-g-400 group-hover:text-g-900 transition-colors"></span>
+          </button>
+        </aside>
+      </div>
+
+      <!-- ============ NOTIFICATIONS TAB ============ -->
+      <div x-show="activeTab === 'notifications'" class="p-4 grid grid-cols-[1fr_320px] gap-4">
+        <div class="flex flex-col gap-4 min-w-0">
+        <header>
+          <h2 class="text-[18px] font-semibold text-g-900">Notifications</h2>
+          <p class="text-[13px] text-g-400 mt-1">Choose which alerts you want to receive and how.</p>
+        </header>
+
+        <!-- Channel matrix -->
+        <div class="bg-white rounded-xl shadow-card overflow-hidden">
+          <!-- Header row -->
+          <div class="grid grid-cols-[1fr_60px_60px_60px] bg-g-25 border-b border-g-100 px-5 py-3 text-[11px] font-semibold uppercase tracking-wider text-g-400">
+            <span>Event type</span>
+            <span class="text-center">Email</span>
+            <span class="text-center">Push</span>
+            <span class="text-center">SMS</span>
+          </div>
+          <template x-for="(n, idx) in notifMatrix" :key="n.key">
+            <div class="grid grid-cols-[1fr_60px_60px_60px] px-5 py-4 items-center gap-3" :class="idx < notifMatrix.length - 1 ? 'border-b border-g-100' : ''">
+              <div class="min-w-0">
+                <div class="text-[14px] font-semibold text-g-900" x-text="n.title"></div>
+                <div class="text-[11px] text-g-400 mt-0.5" x-text="n.desc"></div>
+              </div>
+              <div class="flex justify-center">
+                <div @click="n.email = !n.email" class="tgl" :class="n.email ? 'on' : ''"></div>
+              </div>
+              <div class="flex justify-center">
+                <div @click="n.push = !n.push" class="tgl" :class="n.push ? 'on' : ''"></div>
+              </div>
+              <div class="flex justify-center">
+                <div @click="n.sms = !n.sms" class="tgl" :class="n.sms ? 'on' : ''"></div>
+              </div>
+            </div>
+          </template>
+        </div>
+
+        <!-- Quiet hours -->
+        <div class="bg-white rounded-xl shadow-card p-4 flex items-center gap-4">
+          <div class="w-10 h-10 rounded-full bg-por-0 flex items-center justify-center">
+            <span class="text-[16px]">🌙</span>
+          </div>
+          <div class="flex-1">
+            <div class="text-[14px] font-semibold text-g-900">Quiet hours</div>
+            <div class="text-[12px] text-g-400 mt-0.5">Pause non-critical notifications from 10:00 PM to 7:00 AM</div>
+          </div>
+          <div @click="quietHours = !quietHours" class="tgl" :class="quietHours ? 'on' : ''"></div>
+        </div>
+        </div>
+
+        <!-- Right sidebar: Notification summary -->
+        <aside class="flex flex-col gap-4">
+          <div class="bg-white rounded-xl shadow-card p-4 flex flex-col gap-3">
+            <div class="text-[12px] uppercase tracking-wider text-g-400 font-medium">Active per channel</div>
+            <div class="flex flex-col gap-3">
+              <div class="flex items-center gap-3">
+                <span class="w-9 h-9 rounded-full bg-suc-0 flex items-center justify-center text-[14px]">✉️</span>
+                <span class="flex-1 text-[13px] font-medium text-g-900">Email</span>
+                <span class="text-[14px] font-semibold text-g-900" x-text="emailCount + ' / 6'"></span>
+              </div>
+              <div class="flex items-center gap-3">
+                <span class="w-9 h-9 rounded-full bg-por-0 flex items-center justify-center text-[14px]">🔔</span>
+                <span class="flex-1 text-[13px] font-medium text-g-900">Push</span>
+                <span class="text-[14px] font-semibold text-g-900" x-text="pushCount + ' / 6'"></span>
+              </div>
+              <div class="flex items-center gap-3">
+                <span class="w-9 h-9 rounded-full bg-[#FFF7E5] flex items-center justify-center text-[14px]">📱</span>
+                <span class="flex-1 text-[13px] font-medium text-g-900">SMS</span>
+                <span class="text-[14px] font-semibold text-g-900" x-text="smsCount + ' / 6'"></span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Bulk actions -->
+          <div class="bg-white rounded-xl shadow-card p-4 flex flex-col gap-2">
+            <div class="text-[12px] uppercase tracking-wider text-g-400 font-medium mb-1">Quick actions</div>
+            <button @click="enableAllNotif()" class="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-g-25 text-[12px] font-medium text-g-900 transition-colors text-left">
+              <span class="ic ic-16 ic-check text-suc-200"></span>Enable all notifications
+            </button>
+            <button @click="disableAllNotif()" class="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-g-25 text-[12px] font-medium text-g-900 transition-colors text-left">
+              <span class="ic ic-16 ic-trash text-g-400"></span>Disable all (security stays on)
+            </button>
+            <button @click="onlyImportantNotif()" class="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-g-25 text-[12px] font-medium text-g-900 transition-colors text-left">
+              <span class="ic ic-16 ic-star text-[#B8860B]"></span>Only critical alerts
+            </button>
+          </div>
+
+          <div class="bg-[#FFF7E5] border border-[rgba(255,170,0,0.25)] rounded-xl p-4 flex flex-col gap-2">
+            <div class="flex items-center gap-2">
+              <span class="text-[16px]">⚠️</span>
+              <span class="text-[12px] font-semibold text-[#B8860B]">Important</span>
+            </div>
+            <p class="text-[12px] text-g-900 leading-snug">Security alerts can't be fully disabled to protect your account from unauthorized access.</p>
+          </div>
+        </aside>
+      </div>
+
+      <!-- ============ CONNECTED ACCOUNTS TAB ============ -->
+      <div x-show="activeTab === 'connected'" class="p-4 grid grid-cols-[1fr_320px] gap-4">
+        <div class="flex flex-col gap-4 min-w-0">
+        <header class="flex items-center gap-4">
+          <div class="flex-1">
+            <h2 class="text-[18px] font-semibold text-g-900">Connected Accounts</h2>
+            <p class="text-[13px] text-g-400 mt-1">Cards, bank accounts, and third-party services.</p>
+          </div>
+          <a href="#/wallet" class="px-4 h-10 rounded-full bg-p-300 hover:bg-p-200 text-[13px] font-semibold text-s-300 transition-colors flex items-center gap-2">
+            <span class="ic ic-16 ic-plus" style="color:#163300"></span>Manage cards
+          </a>
+        </header>
+
+        <!-- Cards from wallet data -->
+        <div class="bg-white rounded-xl shadow-card flex flex-col">
+          <div class="p-4 border-b border-g-100">
+            <div class="text-[14px] font-semibold text-g-900">Payment cards</div>
+            <div class="text-[12px] text-g-400 mt-0.5" x-text="cards.length + ' cards linked'"></div>
+          </div>
+          <template x-for="(c, idx) in cards" :key="c.id">
+            <div class="flex items-center gap-3 p-4" :class="idx < cards.length - 1 ? 'border-b border-g-100' : ''">
+              <div class="w-12 h-8 rounded shrink-0" :style="`background: ${c.gradient}`"></div>
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2">
+                  <span class="text-[13px] font-semibold text-g-900 truncate" x-text="c.name"></span>
+                  <template x-if="c.isPrimary"><span class="bg-suc-0 border border-[rgba(64,196,170,0.2)] text-suc-200 text-[10px] font-bold rounded-full px-1.5 py-0.5">PRIMARY</span></template>
+                </div>
+                <div class="text-[11px] text-g-400 mt-0.5" x-text="c.type + ' · •••• ' + c.last4"></div>
+              </div>
+              <span class="text-[11px] text-g-400">Expires <span x-text="c.expiry"></span></span>
+            </div>
+          </template>
+        </div>
+
+        <!-- Third-party -->
+        <div class="bg-white rounded-xl shadow-card flex flex-col">
+          <div class="p-4 border-b border-g-100">
+            <div class="text-[14px] font-semibold text-g-900">Third-party services</div>
+            <div class="text-[12px] text-g-400 mt-0.5">Linked accounts for faster sign-in</div>
+          </div>
+          <template x-for="(p, idx) in providers" :key="p.name">
+            <div class="flex items-center gap-3 p-4" :class="idx < providers.length - 1 ? 'border-b border-g-100' : ''">
+              <div class="w-10 h-10 rounded-full flex items-center justify-center shrink-0 text-[18px]" :style="`background: ${p.bg}`" x-text="p.emoji"></div>
+              <div class="flex-1 min-w-0">
+                <div class="text-[14px] font-semibold text-g-900" x-text="p.name"></div>
+                <div class="text-[11px] text-g-400 mt-0.5" x-text="p.connected ? ('Connected as ' + p.email) : 'Not connected'"></div>
+              </div>
+              <button x-show="!p.connected" @click="p.connected = true; p.email = profile.email; window.toast(p.name + ' connected')" class="px-4 h-9 rounded-full bg-p-300 hover:bg-p-200 text-[12px] font-semibold text-s-300 transition-colors">Connect</button>
+              <button x-show="p.connected" @click="disconnectProvider(p)" class="px-4 h-9 rounded-full hover:bg-err-0 border border-g-100 text-[12px] font-semibold text-err-200 transition-colors">Disconnect</button>
+            </div>
+          </template>
+        </div>
+        </div>
+
+        <!-- Right sidebar -->
+        <aside class="flex flex-col gap-4">
+          <div class="bg-white rounded-xl shadow-card p-4 flex flex-col gap-3">
+            <div class="text-[12px] uppercase tracking-wider text-g-400 font-medium">Connection summary</div>
+            <div class="grid grid-cols-2 gap-3 pt-1">
+              <div class="bg-g-25 rounded-lg p-3">
+                <div class="text-[10px] text-g-400 uppercase tracking-wider">Cards</div>
+                <div class="text-[18px] font-semibold text-g-900 mt-1" x-text="cards.length"></div>
+              </div>
+              <div class="bg-g-25 rounded-lg p-3">
+                <div class="text-[10px] text-g-400 uppercase tracking-wider">Services</div>
+                <div class="text-[18px] font-semibold text-g-900 mt-1" x-text="connectedProviders + ' / ' + providers.length"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-xl shadow-card p-4 flex flex-col gap-3">
+            <div class="text-[12px] uppercase tracking-wider text-g-400 font-medium">Add new</div>
+            <a href="#/wallet" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-g-25 transition-colors group">
+              <span class="w-8 h-8 rounded-full bg-suc-0 flex items-center justify-center"><span class="ic ic-16 ic-plus text-suc-200"></span></span>
+              <div class="flex-1 text-left">
+                <div class="text-[13px] font-medium text-g-900">Add payment card</div>
+                <div class="text-[11px] text-g-400">Visa, Mastercard, PayPal</div>
+              </div>
+              <span class="ic ic-16 ic-chevron-right text-g-400 group-hover:text-g-900 transition-colors"></span>
+            </a>
+            <button @click="window.toast('Bank linking coming soon', { type: 'info' })" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-g-25 transition-colors group text-left">
+              <span class="w-8 h-8 rounded-full bg-por-0 flex items-center justify-center"><span class="ic ic-16 ic-wallet text-por-100"></span></span>
+              <div class="flex-1">
+                <div class="text-[13px] font-medium text-g-900">Link bank account</div>
+                <div class="text-[11px] text-g-400">via Plaid integration</div>
+              </div>
+              <span class="ic ic-16 ic-chevron-right text-g-400 group-hover:text-g-900 transition-colors"></span>
+            </button>
+          </div>
+
+          <div class="bg-[#EFFEFA] border border-[rgba(64,196,170,0.25)] rounded-xl p-4 flex flex-col gap-2">
+            <div class="flex items-center gap-2">
+              <span class="text-[16px]">🔒</span>
+              <span class="text-[12px] font-semibold text-suc-200">Bank-grade security</span>
+            </div>
+            <p class="text-[12px] text-g-900 leading-snug">All connections use 256-bit encryption. We never store your card CVV or banking passwords.</p>
+          </div>
+        </aside>
+      </div>
+
+      <!-- ============ BILLING TAB ============ -->
+      <div x-show="activeTab === 'billing'" class="p-4 grid grid-cols-[1fr_320px] gap-4">
+        <div class="flex flex-col gap-4 min-w-0">
+        <header>
+          <h2 class="text-[18px] font-semibold text-g-900">Billing & Plan</h2>
+          <p class="text-[13px] text-g-400 mt-1">Manage your subscription and payment method.</p>
+        </header>
+
+        <!-- Current plan -->
+        <div class="bg-white rounded-xl shadow-card overflow-hidden">
+          <div class="p-4 flex items-start gap-4" style="background: linear-gradient(135deg, #B2ED8D 0%, #9FE870 50%, #40C4AA 100%);">
+            <div class="flex-1">
+              <div class="text-[10px] uppercase tracking-wider font-bold text-s-300">Current Plan</div>
+              <div class="text-[24px] font-semibold text-s-300 tracking-tight2 mt-1">Premium</div>
+              <div class="text-[13px] text-s-300/80 mt-1">$9.99/month · Renews Aug 28, 2024</div>
+            </div>
+            <button @click="window.toast('Plan management coming soon', { type: 'info' })" class="px-4 h-10 rounded-full bg-white hover:bg-g-25 text-[13px] font-semibold text-s-300 transition-colors shrink-0">Change plan</button>
+          </div>
+          <div class="grid grid-cols-3 border-t border-g-100">
+            <div class="px-5 py-4 border-r border-g-100">
+              <div class="text-[10px] uppercase tracking-wider text-g-400 font-medium">Cards</div>
+              <div class="text-[16px] font-semibold text-g-900 mt-1">Unlimited</div>
+            </div>
+            <div class="px-5 py-4 border-r border-g-100">
+              <div class="text-[10px] uppercase tracking-wider text-g-400 font-medium">Transactions</div>
+              <div class="text-[16px] font-semibold text-g-900 mt-1">Unlimited</div>
+            </div>
+            <div class="px-5 py-4">
+              <div class="text-[10px] uppercase tracking-wider text-g-400 font-medium">Reports</div>
+              <div class="text-[16px] font-semibold text-g-900 mt-1">Advanced</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Payment method -->
+        <div class="bg-white rounded-xl shadow-card p-4 flex items-center gap-4">
+          <div class="w-12 h-8 rounded shrink-0" style="background: linear-gradient(135deg, #163300 0%, #2D5C0F 50%, #455C33 100%);"></div>
+          <div class="flex-1">
+            <div class="text-[14px] font-semibold text-g-900">Visa •••• 8744</div>
+            <div class="text-[11px] text-g-400 mt-0.5">Expires 12/27 · Default payment method</div>
+          </div>
+          <button @click="window.toast('Update card coming soon', { type: 'info' })" class="px-4 h-10 rounded-full bg-white border border-g-100 hover:bg-g-25 text-[13px] font-semibold text-g-900 transition-colors">Update</button>
+        </div>
+
+        <!-- Billing history -->
+        <div class="bg-white rounded-xl shadow-card overflow-hidden">
+          <div class="p-4 border-b border-g-100 flex items-center gap-3">
+            <div class="flex-1">
+              <div class="text-[14px] font-semibold text-g-900">Billing history</div>
+              <div class="text-[12px] text-g-400 mt-0.5">Past invoices</div>
+            </div>
+            <button @click="window.toast('Downloaded all invoices', { type: 'success' })" class="px-3 h-9 rounded-full bg-white border border-g-100 hover:bg-g-25 text-[12px] font-semibold text-g-900 transition-colors flex items-center gap-1.5">
+              <span class="ic ic-16 ic-download text-g-900"></span>Export all
+            </button>
+          </div>
+          <template x-for="(b, idx) in billing" :key="b.id">
+            <div class="flex items-center gap-3 px-5 py-3" :class="idx < billing.length - 1 ? 'border-b border-g-100' : ''">
+              <div class="flex-1 min-w-0">
+                <div class="text-[13px] font-medium text-g-900" x-text="b.invoice"></div>
+                <div class="text-[11px] text-g-400 mt-0.5" x-text="b.date + ' · ' + b.plan"></div>
+              </div>
+              <span class="text-[13px] font-semibold text-g-900" x-text="'$' + b.amount.toFixed(2)"></span>
+              <span class="bg-suc-0 border border-[rgba(64,196,170,0.2)] text-suc-200 text-[10px] font-bold rounded-full px-2 py-0.5">PAID</span>
+              <button @click="window.toast('Invoice ' + b.invoice + ' downloaded')" class="w-8 h-8 rounded-full hover:bg-g-25 flex items-center justify-center text-g-400 hover:text-g-900 transition-colors">
+                <span class="ic ic-16 ic-download"></span>
+              </button>
+            </div>
+          </template>
+        </div>
+        </div>
+
+        <!-- Right sidebar: Plan comparison + Usage -->
+        <aside class="flex flex-col gap-4">
+          <div class="bg-white rounded-xl shadow-card p-4 flex flex-col gap-3">
+            <div class="text-[12px] uppercase tracking-wider text-g-400 font-medium">Usage this month</div>
+            <div class="flex flex-col gap-3">
+              <div>
+                <div class="flex items-center justify-between mb-1.5">
+                  <span class="text-[12px] text-g-900">Transactions logged</span>
+                  <span class="text-[12px] font-semibold text-g-900">847 <span class="text-g-400">/ ∞</span></span>
+                </div>
+                <div class="h-1.5 bg-g-50 rounded-full overflow-hidden">
+                  <div class="h-full bg-suc-100 rounded-full" style="width: 35%"></div>
+                </div>
+              </div>
+              <div>
+                <div class="flex items-center justify-between mb-1.5">
+                  <span class="text-[12px] text-g-900">Cards linked</span>
+                  <span class="text-[12px] font-semibold text-g-900">4 <span class="text-g-400">/ ∞</span></span>
+                </div>
+                <div class="h-1.5 bg-g-50 rounded-full overflow-hidden">
+                  <div class="h-full bg-por-100 rounded-full" style="width: 15%"></div>
+                </div>
+              </div>
+              <div>
+                <div class="flex items-center justify-between mb-1.5">
+                  <span class="text-[12px] text-g-900">Custom reports</span>
+                  <span class="text-[12px] font-semibold text-g-900">12 <span class="text-g-400">/ ∞</span></span>
+                </div>
+                <div class="h-1.5 bg-g-50 rounded-full overflow-hidden">
+                  <div class="h-full bg-[#FFA500] rounded-full" style="width: 22%"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Next invoice -->
+          <div class="bg-white rounded-xl shadow-card p-4 flex flex-col gap-3">
+            <div class="flex items-center gap-2">
+              <span class="ic ic-16 ic-clipboard text-g-400"></span>
+              <span class="text-[12px] uppercase tracking-wider text-g-400 font-medium">Next invoice</span>
+            </div>
+            <div class="text-[18px] font-semibold text-g-900">$9.99</div>
+            <div class="text-[11px] text-g-400">Auto-charged on <span class="font-medium text-g-900">Sep 1, 2024</span> to Visa •••• 8744</div>
+          </div>
+
+          <div class="bg-[#F4F0FF] border border-por-25 rounded-xl p-4 flex flex-col gap-2">
+            <div class="flex items-center gap-2">
+              <span class="text-[16px]">⭐</span>
+              <span class="text-[12px] font-semibold text-por-100">Save 20% yearly</span>
+            </div>
+            <p class="text-[12px] text-g-900 leading-snug">Switch to annual billing and save $24/year. Pay $95.88 once instead of $119.88.</p>
+            <button @click="window.toast('Annual billing coming soon', { type: 'info' })" class="self-start text-[11px] font-semibold text-por-100 hover:underline mt-1">Switch to annual →</button>
+          </div>
+        </aside>
+      </div>
+
+      <!-- ============ PRIVACY TAB ============ -->
+      <div x-show="activeTab === 'privacy'" class="p-4 grid grid-cols-[1fr_320px] gap-4">
+        <div class="flex flex-col gap-4 min-w-0">
+          <header>
+            <h2 class="text-[18px] font-semibold text-g-900">Privacy & Data</h2>
+            <p class="text-[13px] text-g-400 mt-1">Control your data and account.</p>
+          </header>
+
+          <div class="bg-white rounded-xl shadow-card p-4 flex items-center gap-4">
+            <div class="w-10 h-10 rounded-full bg-g-25 flex items-center justify-center">
+              <span class="ic ic-20 ic-download text-g-900"></span>
+            </div>
+            <div class="flex-1">
+              <div class="text-[14px] font-semibold text-g-900">Export your data</div>
+              <div class="text-[12px] text-g-400 mt-0.5">Download all transactions, accounts, and reports in CSV format</div>
+            </div>
+            <button @click="exportAllData()" class="px-4 h-10 rounded-full bg-white border border-g-100 hover:bg-g-25 text-[13px] font-semibold text-g-900 transition-colors">Export</button>
+          </div>
+
+          <div class="bg-white rounded-xl shadow-card p-4 flex items-center gap-4">
+            <div class="w-10 h-10 rounded-full bg-g-25 flex items-center justify-center">
+              <span class="ic ic-20 ic-clipboard text-g-900"></span>
+            </div>
+            <div class="flex-1">
+              <div class="text-[14px] font-semibold text-g-900">Privacy policy</div>
+              <div class="text-[12px] text-g-400 mt-0.5">Review how we collect, use, and protect your data</div>
+            </div>
+            <button @click="window.toast('Opening privacy policy…', { type: 'info' })" class="px-4 h-10 rounded-full bg-white border border-g-100 hover:bg-g-25 text-[13px] font-semibold text-g-900 transition-colors">Read</button>
+          </div>
+
+          <div class="bg-white rounded-xl shadow-card p-4 flex items-center gap-4">
+            <div class="w-10 h-10 rounded-full bg-g-25 flex items-center justify-center">
+              <span class="ic ic-20 ic-eye text-g-900"></span>
+            </div>
+            <div class="flex-1">
+              <div class="text-[14px] font-semibold text-g-900">Activity log</div>
+              <div class="text-[12px] text-g-400 mt-0.5">View a history of actions taken on your account</div>
+            </div>
+            <button @click="window.toast('Activity log coming soon', { type: 'info' })" class="px-4 h-10 rounded-full bg-white border border-g-100 hover:bg-g-25 text-[13px] font-semibold text-g-900 transition-colors">View</button>
+          </div>
+
+          <div class="bg-err-0 rounded-xl border border-[rgba(223,28,65,0.15)] p-4 flex items-center gap-4">
+            <div class="w-10 h-10 rounded-full bg-[#FCDCE0] flex items-center justify-center">
+              <span class="ic ic-20 ic-trash text-err-200"></span>
+            </div>
+            <div class="flex-1">
+              <div class="text-[14px] font-semibold text-err-200">Delete account</div>
+              <div class="text-[12px] text-err-200/70 mt-0.5">Permanently remove your account and all associated data. This cannot be undone.</div>
+            </div>
+            <button @click="confirmDeleteAccount()" class="px-4 h-10 rounded-full bg-err-100 hover:brightness-110 text-[13px] font-semibold text-white transition-colors">Delete</button>
+          </div>
+        </div>
+
+        <!-- Right sidebar -->
+        <aside class="flex flex-col gap-4">
+          <div class="bg-white rounded-xl shadow-card p-4 flex flex-col gap-3">
+            <div class="text-[12px] uppercase tracking-wider text-g-400 font-medium">Your data, your control</div>
+            <div class="flex items-start gap-2.5">
+              <span class="w-6 h-6 rounded-full bg-suc-0 flex items-center justify-center shrink-0 mt-0.5"><span class="ic ic-16 ic-check text-suc-200" style="-webkit-mask-size: 10px; mask-size: 10px;"></span></span>
+              <div class="flex-1">
+                <div class="text-[12px] font-semibold text-g-900">End-to-end encryption</div>
+                <div class="text-[11px] text-g-400 mt-0.5">All data encrypted in transit and at rest</div>
+              </div>
+            </div>
+            <div class="flex items-start gap-2.5">
+              <span class="w-6 h-6 rounded-full bg-suc-0 flex items-center justify-center shrink-0 mt-0.5"><span class="ic ic-16 ic-check text-suc-200" style="-webkit-mask-size: 10px; mask-size: 10px;"></span></span>
+              <div class="flex-1">
+                <div class="text-[12px] font-semibold text-g-900">No selling to 3rd parties</div>
+                <div class="text-[11px] text-g-400 mt-0.5">We never share your financial data</div>
+              </div>
+            </div>
+            <div class="flex items-start gap-2.5">
+              <span class="w-6 h-6 rounded-full bg-suc-0 flex items-center justify-center shrink-0 mt-0.5"><span class="ic ic-16 ic-check text-suc-200" style="-webkit-mask-size: 10px; mask-size: 10px;"></span></span>
+              <div class="flex-1">
+                <div class="text-[12px] font-semibold text-g-900">GDPR & CCPA compliant</div>
+                <div class="text-[11px] text-g-400 mt-0.5">Full data portability and right to erasure</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Data summary -->
+          <div class="bg-white rounded-xl shadow-card p-4 flex flex-col gap-3">
+            <div class="text-[12px] uppercase tracking-wider text-g-400 font-medium">Your data footprint</div>
+            <div class="flex items-center gap-2"><span class="text-[12px] text-g-400 flex-1">Transactions</span><span class="text-[13px] font-semibold text-g-900">847</span></div>
+            <div class="flex items-center gap-2"><span class="text-[12px] text-g-400 flex-1">Stored files</span><span class="text-[13px] font-semibold text-g-900">23 KB</span></div>
+            <div class="flex items-center gap-2"><span class="text-[12px] text-g-400 flex-1">Account age</span><span class="text-[13px] font-semibold text-g-900">18 months</span></div>
+          </div>
+
+          <div class="bg-[#F4F0FF] border border-por-25 rounded-xl p-4 flex flex-col gap-2">
+            <div class="flex items-center gap-2">
+              <span class="text-[16px]">📋</span>
+              <span class="text-[12px] font-semibold text-por-100">Documentation</span>
+            </div>
+            <p class="text-[12px] text-g-900 leading-snug">Read our <a href="#" class="font-semibold text-por-100 hover:underline">Privacy Policy</a> and <a href="#" class="font-semibold text-por-100 hover:underline">Terms of Service</a> for full details on data handling.</p>
+          </div>
+        </aside>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== Sticky save bar (when dirty) ===== -->
+  <div x-show="isDirty" x-cloak x-transition.opacity
+       class="border-t border-g-100 bg-white px-6 py-3 flex items-center gap-3 shrink-0">
+    <span class="ic ic-16 ic-edit text-g-400"></span>
+    <span class="flex-1 text-[13px] text-g-400">You have unsaved changes</span>
+    <button @click="discardChanges()" class="px-4 h-9 rounded-full hover:bg-g-25 text-[13px] font-semibold text-g-900 transition-colors">Discard</button>
+    <button @click="saveChanges()" class="px-5 h-9 rounded-full bg-p-300 hover:bg-p-200 text-[13px] font-semibold text-s-300 transition-colors">Save changes</button>
+  </div>
+
+  <!-- ===== Change Password Modal ===== -->
+  <div x-show="changePasswordOpen" x-cloak x-transition.opacity @keydown.escape.window="changePasswordOpen = false"
+       class="fixed inset-0 bg-black/40 z-40 flex items-center justify-center px-4" @click.self="changePasswordOpen = false">
+    <div x-show="changePasswordOpen" x-transition class="bg-white rounded-2xl shadow-pop max-w-[420px] w-full">
+      <div class="h-16 px-5 border-b border-g-100 flex items-center gap-3">
+        <h2 class="flex-1 text-[16px] font-semibold text-g-900">Change Password</h2>
+        <button @click="changePasswordOpen = false" class="w-8 h-8 rounded-full hover:bg-g-50 flex items-center justify-center text-g-400">✕</button>
+      </div>
+      <form @submit.prevent="submitPasswordChange()" class="p-5 flex flex-col gap-4">
+        <div>
+          <label class="form-label">Current password</label>
+          <input type="password" class="form-input" required/>
+        </div>
+        <div>
+          <label class="form-label">New password</label>
+          <input type="password" class="form-input" required minlength="8"/>
+          <p class="form-hint">Minimum 8 characters with letters, numbers, and symbols</p>
+        </div>
+        <div>
+          <label class="form-label">Confirm new password</label>
+          <input type="password" class="form-input" required/>
+        </div>
+        <div class="flex items-center gap-2 pt-2">
+          <button type="button" @click="changePasswordOpen = false" class="flex-1 h-11 rounded-full border border-g-100 text-[14px] font-semibold text-g-900 hover:bg-g-25">Cancel</button>
+          <button type="submit" class="flex-1 h-11 rounded-full bg-p-300 hover:bg-p-200 text-[14px] font-semibold text-s-300">Update password</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+  function settingsPage() {
+    return {
+      activeTab: 'profile',
+      lastSaved: null,
+      changePasswordOpen: false,
+      dirty: { profile: false, prefs: false },
+
+      navItems: [
+        { id: 'profile',      label: 'Profile',           icon: 'ic-settings' },
+        { id: 'security',     label: 'Security',          icon: 'ic-snowflake', badge: '2FA', badgeBg: '#EFFEFA', badgeColor: '#287F6E' },
+        { id: 'preferences',  label: 'Preferences',       icon: 'ic-edit' },
+        { id: 'notifications',label: 'Notifications',     icon: 'ic-bell' },
+        { id: 'connected',    label: 'Connected Accounts',icon: 'ic-wallet', badge: '4', badgeBg: '#F4F0FF', badgeColor: '#936DFF' },
+        { id: 'billing',      label: 'Billing & Plan',    icon: 'ic-clipboard' },
+        { id: 'privacy',      label: 'Privacy & Data',    icon: 'ic-help' },
+      ],
+
+      profile: {
+        firstName: 'Kristin',
+        lastName: 'Watson',
+        email: 'kristin.watson@monefy.com',
+        phone: '+1 (415) 555-0182',
+        dob: '1992-04-18',
+        address: '742 Evergreen Terrace\nSan Francisco, CA 94110\nUnited States',
+        bio: 'Product designer focused on building delightful financial tools.',
+      },
+
+      prefs: {
+        currency: 'USD', language: 'en', timezone: '(UTC-08:00) Pacific Time',
+        dateFormat: 'MM/DD/YYYY', numFormat: '1,234.56 (en-US)', weekStart: 'Sunday',
+      },
+
+      securityToggles: [
+        { key:'2fa',      title:'Two-factor authentication', desc:'Add an extra layer of security via authenticator app', on:true,  icon:'ic-snowflake', iconColor:'#287F6E', iconBg:'#EFFEFA' },
+        { key:'bio',      title:'Biometric login',           desc:'Use Face ID or Touch ID to sign in faster',           on:true,  icon:'ic-eye',       iconColor:'#936DFF', iconBg:'#F4F0FF' },
+        { key:'alert',    title:'Login alerts',              desc:'Get notified when your account is accessed',          on:true,  icon:'ic-bell',      iconColor:'#B8860B', iconBg:'#FFF7E5' },
+        { key:'hide',     title:'Hide balance on lock screen', desc:'Mask account balance when device is locked',        on:false, icon:'ic-eye',       iconColor:'#0A0A0A', iconBg:'#F5F5F5' },
+      ],
+
+      sessions: [
+        { id:1, device:'MacBook Pro · Chrome',  location:'San Francisco, CA',  lastActive:'Active now',          icon:'💻', current:true },
+        { id:2, device:'iPhone 15 · Safari',    location:'San Francisco, CA',  lastActive:'2 hours ago',         icon:'📱', current:false },
+        { id:3, device:'iPad Pro · Safari',     location:'Los Angeles, CA',    lastActive:'3 days ago',          icon:'📱', current:false },
+        { id:4, device:'Windows PC · Firefox',  location:'New York, NY',       lastActive:'2 weeks ago',         icon:'🖥️', current:false },
+      ],
+
+      notifMatrix: [
+        { key:'tx',     title:'Transaction alerts',   desc:'Every deposit, withdrawal, or transfer',    email:true,  push:true,  sms:true },
+        { key:'bill',   title:'Bill & subscription',  desc:'Upcoming and overdue payments',             email:true,  push:true,  sms:false },
+        { key:'budget', title:'Budget warnings',      desc:'When you approach or exceed a budget',      email:false, push:true,  sms:false },
+        { key:'sec',    title:'Security alerts',      desc:'Suspicious activity and login attempts',    email:true,  push:true,  sms:true },
+        { key:'report', title:'Monthly report ready', desc:'When your monthly statement is available',  email:true,  push:false, sms:false },
+        { key:'promo',  title:'News & promotions',    desc:'Product updates, tips, and offers',         email:false, push:false, sms:false },
+      ],
+      quietHours: true,
+
+      providers: [
+        { name:'Google',   emoji:'G', bg:'#FEEFF2', connected:true,  email:'kristin.watson@gmail.com' },
+        { name:'Apple ID', emoji:'A', bg:'#F5F5F5', connected:true,  email:'kristin@icloud.com' },
+        { name:'Slack',    emoji:'S', bg:'#F4F0FF', connected:false, email:'' },
+        { name:'GitHub',   emoji:'G', bg:'#F5F5F5', connected:false, email:'' },
+      ],
+
+      billing: [
+        { id:'inv-08', invoice:'Invoice #2024-08', date:'Aug 1, 2024', plan:'Premium · Monthly', amount:9.99 },
+        { id:'inv-07', invoice:'Invoice #2024-07', date:'Jul 1, 2024', plan:'Premium · Monthly', amount:9.99 },
+        { id:'inv-06', invoice:'Invoice #2024-06', date:'Jun 1, 2024', plan:'Premium · Monthly', amount:9.99 },
+        { id:'inv-05', invoice:'Invoice #2024-05', date:'May 1, 2024', plan:'Premium · Monthly', amount:9.99 },
+        { id:'inv-04', invoice:'Invoice #2024-04', date:'Apr 1, 2024', plan:'Free · Trial',      amount:0.00 },
+      ],
+
+      cards: [],
+
+      securityChecklist: [
+        { label: 'Two-factor authentication',  done: true  },
+        { label: 'Biometric login enabled',     done: true  },
+        { label: 'Login alerts enabled',        done: true  },
+        { label: 'Strong unique password',      done: true  },
+        { label: 'Hide balance on lock screen', done: false },
+      ],
+
+      init() {
+        // Pull linked cards from wallet data
+        this.cards = window.MonefyData ? window.MonefyData.wallets : [];
+      },
+
+      get isDirty() { return Object.values(this.dirty).some(v => v); },
+
+      // Profile completion based on filled fields
+      get profileCompletion() {
+        const fields = ['firstName','lastName','email','phone','dob','address','bio'];
+        const filled = fields.filter(f => (this.profile[f] || '').trim().length > 0).length;
+        return Math.round((filled / fields.length) * 100);
+      },
+
+      // Security score based on enabled toggles + password + sessions
+      get securityScore() {
+        let score = 30; // baseline (password exists)
+        if (this.securityToggles[0].on) score += 25; // 2FA
+        if (this.securityToggles[1].on) score += 15; // Biometric
+        if (this.securityToggles[2].on) score += 15; // Login alerts
+        if (this.securityToggles[3].on) score += 15; // Hide balance
+        return score;
+      },
+
+      // Preferences format previews
+      get previewAmount() {
+        const sym = this.currencySymbol;
+        const fmt = this.prefs.numFormat;
+        if (fmt.startsWith('1.234,56')) return sym + '1.234,56';
+        if (fmt.startsWith('1 234,56')) return sym + '1 234,56';
+        return sym + '1,234.56';
+      },
+      get previewDate() {
+        const d = new Date('2024-08-15');
+        const dd = String(d.getDate()).padStart(2, '0');
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        const yyyy = d.getFullYear();
+        if (this.prefs.dateFormat === 'DD/MM/YYYY') return `${dd}/${mm}/${yyyy}`;
+        if (this.prefs.dateFormat === 'YYYY-MM-DD') return `${yyyy}-${mm}-${dd}`;
+        return `${mm}/${dd}/${yyyy}`;
+      },
+      get currencySymbol() {
+        return { USD:'$', EUR:'€', GBP:'£', IDR:'Rp ', JPY:'¥', SGD:'S$' }[this.prefs.currency] || '$';
+      },
+
+      // Notification channel counts
+      get emailCount() { return this.notifMatrix.filter(n => n.email).length; },
+      get pushCount()  { return this.notifMatrix.filter(n => n.push).length; },
+      get smsCount()   { return this.notifMatrix.filter(n => n.sms).length; },
+
+      get connectedProviders() { return this.providers.filter(p => p.connected).length; },
+
+      // Bulk notification actions
+      enableAllNotif() {
+        this.notifMatrix.forEach(n => { n.email = true; n.push = true; n.sms = true; });
+        window.toast('All notifications enabled');
+      },
+      disableAllNotif() {
+        this.notifMatrix.forEach(n => {
+          if (n.key === 'sec') { n.email = true; n.push = true; n.sms = true; }
+          else { n.email = false; n.push = false; n.sms = false; }
+        });
+        window.toast('Non-critical notifications disabled');
+      },
+      onlyImportantNotif() {
+        this.notifMatrix.forEach(n => {
+          const critical = ['sec','tx'].includes(n.key);
+          n.email = critical; n.push = critical; n.sms = n.key === 'sec';
+        });
+        window.toast('Only critical alerts enabled');
+      },
+
+      // Preferences reset
+      resetPreferences() {
+        this.prefs = { currency:'USD', language:'en', timezone:'(UTC-08:00) Pacific Time',
+                       dateFormat:'MM/DD/YYYY', numFormat:'1,234.56 (en-US)', weekStart:'Sunday' };
+        this.dirty.prefs = true;
+        window.toast('Preferences reset to defaults', { type: 'info' });
+      },
+
+      saveChanges() {
+        const now = new Date();
+        this.lastSaved = now.toLocaleTimeString('en-US', { hour:'numeric', minute:'2-digit' });
+        Object.keys(this.dirty).forEach(k => this.dirty[k] = false);
+        window.toast('Settings saved successfully');
+      },
+      discardChanges() {
+        Object.keys(this.dirty).forEach(k => this.dirty[k] = false);
+        window.toast('Changes discarded', { type: 'info' });
+      },
+
+      signOutSession(id) {
+        this.sessions = this.sessions.filter(s => s.id !== id);
+        window.toast('Session signed out');
+      },
+      signOutAll() {
+        window.confirmDialog('Sign out from all other devices? You will remain signed in here.', { destructive: false, confirmText: 'Sign out all' })
+          .then(ok => { if (ok) { this.sessions = this.sessions.filter(s => s.current); window.toast('All other sessions signed out'); } });
+      },
+
+      submitPasswordChange() {
+        this.changePasswordOpen = false;
+        window.toast('Password updated successfully');
+      },
+
+      disconnectProvider(p) {
+        window.confirmDialog('Disconnect ' + p.name + '?', { destructive: true, confirmText: 'Disconnect' })
+          .then(ok => { if (ok) { p.connected = false; p.email = ''; window.toast(p.name + ' disconnected'); } });
+      },
+
+      confirmSignOut() {
+        window.confirmDialog('Sign out of Monefy?', { destructive: false, confirmText: 'Sign out' })
+          .then(ok => { if (ok) window.toast('Signed out (demo)'); });
+      },
+      confirmDeleteAccount() {
+        window.confirmDialog('Delete your account permanently? All data including transactions, wallets, and reports will be erased. This cannot be undone.', { destructive: true, confirmText: 'Delete account' })
+          .then(ok => { if (ok) window.toast('Account deletion requested', { type: 'error' }); });
+      },
+      exportAllData() {
+        window.toast('Preparing your data export…', { type: 'info' });
+        setTimeout(() => window.toast('Export ready! Check your email', { type: 'success' }), 1500);
+      },
+    }
+  }
+</script>

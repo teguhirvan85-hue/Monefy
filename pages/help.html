@@ -1,0 +1,364 @@
+<div x-data="helpPage()" x-init="init()" class="absolute inset-0 flex flex-col overflow-y-auto">
+
+  <!-- ===== Top Header ===== -->
+  <header class="w-full bg-white border-b border-g-100 flex items-center justify-between px-4 py-6 shrink-0">
+    <button @click="window.toast('Command palette coming in Phase 7', { type: 'info' })" class="bg-white rounded-full shadow-card flex items-center gap-2 px-3 py-2 w-[238px] hover:shadow-md transition-shadow">
+      <span class="ic ic-16 ic-search text-g-400"></span>
+      <span class="flex-1 text-left text-[14px] font-medium text-g-400">Search anything…</span>
+      <kbd class="text-[11px] font-medium bg-g-50 border border-g-100 rounded px-1.5 py-0.5 text-g-400">⌘K</kbd>
+    </button>
+    <div class="flex items-center gap-4">
+      <button class="relative bg-white rounded-full shadow-card p-2.5 hover:bg-g-25 transition-colors">
+        <span class="ic ic-20 ic-bell text-g-900"></span>
+        <span class="absolute top-[11px] right-[11px] w-1.5 h-1.5 rounded-full bg-err-100 border border-white"></span>
+      </button>
+      <div class="vdiv"></div>
+      <button @click="window.openReferral()" class="flex items-center gap-2 h-10 px-3 pr-4 rounded-full text-white text-[14px] font-medium border border-g-500 shadow-card hover:brightness-110"
+              style="background-image: linear-gradient(180deg, rgba(255,255,255,0.24) 0%, rgba(255,255,255,0) 100%), linear-gradient(90deg, #163300 0%, #163300 100%);">
+        <span class="ic ic-20 ic-gift text-white"></span>Earn $90
+      </button>
+    </div>
+  </header>
+
+  <!-- ===== Hero ===== -->
+  <section class="px-4 pt-4 shrink-0">
+    <div class="rounded-2xl p-10 flex flex-col items-center text-center gap-5 relative overflow-hidden"
+         style="background: linear-gradient(135deg, #163300 0%, #2D5C0F 50%, #455C33 100%);">
+
+      <!-- Decorative radial light -->
+      <div class="absolute inset-0 opacity-30" style="background-image: radial-gradient(circle at 15% 25%, rgba(159,232,112,0.5) 0%, transparent 45%), radial-gradient(circle at 85% 75%, rgba(178,237,141,0.4) 0%, transparent 45%);"></div>
+
+      <!-- Floating decorative shapes -->
+      <div class="absolute top-6 left-8 w-12 h-12 rounded-2xl bg-p-300/20 backdrop-blur rotate-12 animate-pulse"></div>
+      <div class="absolute top-10 right-12 w-8 h-8 rounded-full bg-suc-100/30 backdrop-blur"></div>
+      <div class="absolute bottom-8 left-16 w-10 h-10 rounded-full bg-white/10 backdrop-blur"></div>
+      <div class="absolute bottom-6 right-20 w-14 h-14 rounded-2xl bg-p-200/15 backdrop-blur -rotate-12"></div>
+      <div class="absolute top-1/2 right-6 w-6 h-6 rounded-full bg-white/15 backdrop-blur"></div>
+
+      <!-- Stats badge -->
+      <div class="relative inline-flex items-center gap-2 bg-white/15 backdrop-blur border border-white/20 rounded-full px-3 py-1">
+        <span class="w-1.5 h-1.5 rounded-full bg-p-300 animate-pulse"></span>
+        <span class="text-[11px] font-medium text-white">98% of questions answered in self-service</span>
+      </div>
+
+      <div class="relative flex flex-col items-center gap-3">
+        <div class="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center text-[24px] shadow-lg">❓</div>
+        <h1 class="text-[32px] font-semibold tracking-tight2 text-white leading-tight">How can we help, <span class="text-p-300">Kristin?</span></h1>
+        <p class="text-[14px] text-white/80 max-w-md leading-relaxed">Search our knowledge base or browse topics below. Average response time under 2 hours.</p>
+      </div>
+
+      <!-- Big search bar -->
+      <div class="relative w-full max-w-[520px]">
+        <div class="bg-white rounded-full shadow-pop flex items-center gap-3 px-5 py-3 focus-within:ring-2 focus-within:ring-p-300">
+          <span class="ic ic-20 ic-search text-g-400"></span>
+          <input type="text" x-model="search" placeholder="Search articles, guides, FAQs…" class="flex-1 bg-transparent outline-none text-[15px] text-g-900 placeholder:text-g-400" />
+          <template x-if="search"><button @click="search = ''" class="text-g-400 hover:text-g-900">✕</button></template>
+        </div>
+        <!-- Suggestions when typing -->
+        <div x-show="search && searchResults.length > 0" x-cloak class="absolute top-full mt-2 left-0 right-0 bg-white rounded-xl shadow-pop border border-g-100 py-2 z-10 max-h-[300px] overflow-y-auto">
+          <template x-for="r in searchResults" :key="r.id">
+            <button @click="openArticle(r); search = ''" class="w-full text-left px-4 py-2 hover:bg-g-25 flex items-center gap-3 transition-colors">
+              <span class="ic ic-16 ic-clipboard text-g-400"></span>
+              <div class="flex-1 min-w-0">
+                <div class="text-[13px] font-medium text-g-900 truncate" x-text="r.title"></div>
+                <div class="text-[11px] text-g-400 truncate" x-text="r.category + ' · ' + r.read"></div>
+              </div>
+            </button>
+          </template>
+        </div>
+        <div x-show="search && searchResults.length === 0" x-cloak class="absolute top-full mt-2 left-0 right-0 bg-white rounded-xl shadow-pop border border-g-100 p-4 text-center z-10">
+          <p class="text-[13px] text-g-400">No articles found for "<span class="text-g-900 font-medium" x-text="search"></span>"</p>
+          <button @click="openContact()" class="mt-2 text-[12px] font-semibold text-s-300 hover:underline">Contact support →</button>
+        </div>
+      </div>
+
+      <!-- Popular tags -->
+      <div class="flex items-center gap-2 flex-wrap justify-center relative">
+        <span class="text-[11px] text-white/70 mr-1">Popular:</span>
+        <template x-for="t in popularTags" :key="t">
+          <button @click="search = t" class="px-3 py-1 rounded-full bg-white/20 hover:bg-white/30 backdrop-blur text-[11px] font-medium text-white transition-colors" x-text="t"></button>
+        </template>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== Topic Categories ===== -->
+  <section class="px-4 pt-4 shrink-0">
+    <div class="flex items-center gap-3 mb-4">
+      <h2 class="text-[16px] font-semibold text-g-900">Browse by topic</h2>
+      <span class="text-[11px] text-g-400" x-text="categories.reduce((s, c) => s + c.count, 0) + ' articles total'"></span>
+      <div class="flex-1"></div>
+      <button class="text-[12px] font-semibold text-s-300 hover:underline flex items-center gap-1 group">
+        View all categories <span class="transition-transform group-hover:translate-x-0.5">→</span>
+      </button>
+    </div>
+    <div class="grid grid-cols-4 gap-4">
+      <template x-for="cat in categories" :key="cat.id">
+        <button @click="activeCategory = cat.id"
+                class="relative bg-white rounded-xl shadow-card p-4 flex flex-col gap-3 hover:shadow-pop transition-all hover:-translate-y-1 text-left overflow-hidden group">
+          <!-- Decorative gradient blob top-right -->
+          <div class="absolute -top-8 -right-8 w-24 h-24 rounded-full opacity-60 transition-transform group-hover:scale-125" :style="`background: radial-gradient(circle, ${cat.bg} 0%, transparent 70%);`"></div>
+          <!-- Subtle accent bar at top -->
+          <div class="absolute top-0 left-0 right-0 h-1 opacity-0 group-hover:opacity-100 transition-opacity" :style="`background: ${cat.accent}`"></div>
+
+          <span class="relative w-12 h-12 rounded-2xl flex items-center justify-center text-[20px] shadow-sm transition-transform group-hover:scale-110 group-hover:rotate-3"
+                :style="`background: ${cat.bg}; border: 1px solid ${cat.accent}33;`" x-text="cat.icon"></span>
+          <div class="relative flex-1">
+            <div class="text-[14px] font-semibold text-g-900" x-text="cat.label"></div>
+            <div class="text-[11px] text-g-400 mt-0.5 flex items-center gap-1">
+              <span x-text="cat.count + ' articles'"></span>
+              <span class="text-g-300">·</span>
+              <span x-text="Math.ceil(cat.count / 3) + ' min read'"></span>
+            </div>
+          </div>
+          <span class="relative text-[11px] font-bold flex items-center gap-1" :style="`color: ${cat.accent}`">
+            <span class="uppercase tracking-wider">Browse</span>
+            <span class="transition-transform group-hover:translate-x-1">→</span>
+          </span>
+        </button>
+      </template>
+    </div>
+  </section>
+
+  <!-- ===== Main 2-col: FAQ + Sidebar ===== -->
+  <section class="px-4 pt-4 pb-4 grid grid-cols-[1fr_320px] gap-4">
+    <!-- FAQ accordion -->
+    <div class="bg-white rounded-xl shadow-card flex flex-col">
+      <div class="p-5 border-b border-g-100 flex items-center gap-3">
+        <div class="flex-1">
+          <h2 class="text-[16px] font-semibold text-g-900">Frequently asked questions</h2>
+          <p class="text-[12px] text-g-400 mt-1">Quick answers to common questions</p>
+        </div>
+        <span class="text-[11px] text-g-400" x-text="filteredFaq.length + ' results'"></span>
+      </div>
+
+      <div class="flex flex-col">
+        <template x-for="(f, idx) in filteredFaq" :key="f.id">
+          <div class="border-b border-g-100 last:border-0">
+            <button @click="toggleFaq(f.id)" class="w-full px-5 py-4 flex items-start gap-3 text-left hover:bg-g-25 transition-colors">
+              <span class="w-6 h-6 rounded-full flex items-center justify-center shrink-0 mt-0.5" :style="`background: ${f.bg}`">
+                <span class="text-[11px] font-bold" :style="`color: ${f.color}`" x-text="f.tag.charAt(0)"></span>
+              </span>
+              <div class="flex-1 min-w-0">
+                <div class="text-[13px] font-semibold text-g-900" x-text="f.q"></div>
+                <div class="text-[10px] uppercase tracking-wider mt-1" :style="`color: ${f.color}`" x-text="f.tag"></div>
+              </div>
+              <span class="ic ic-16 transition-transform shrink-0 mt-1" :class="openFaq === f.id ? 'ic-chevron-down rotate-180 text-g-900' : 'ic-chevron-down text-g-400'"></span>
+            </button>
+            <div x-show="openFaq === f.id" x-cloak x-collapse class="px-5 pb-4 pl-14">
+              <p class="text-[13px] text-g-400 leading-relaxed" x-text="f.a"></p>
+              <div class="flex items-center gap-2 mt-3 pt-3 border-t border-g-100">
+                <span class="text-[11px] text-g-400">Was this helpful?</span>
+                <button @click="window.toast('Thanks for your feedback!')" class="text-[12px] px-2 py-1 rounded-full hover:bg-suc-0 text-g-900 hover:text-suc-200 transition-colors">👍 Yes</button>
+                <button @click="window.toast('Thanks — we\'ll improve this article')" class="text-[12px] px-2 py-1 rounded-full hover:bg-err-0 text-g-900 hover:text-err-200 transition-colors">👎 No</button>
+                <div class="flex-1"></div>
+                <button @click="window.toast('Article saved to bookmarks')" class="text-[11px] font-semibold text-s-300 hover:underline">Save article</button>
+              </div>
+            </div>
+          </div>
+        </template>
+        <template x-if="filteredFaq.length === 0">
+          <div class="p-8 flex flex-col items-center gap-2 text-center">
+            <div class="w-14 h-14 rounded-full bg-g-25 flex items-center justify-center text-[20px]">🔍</div>
+            <div class="text-[14px] font-semibold text-g-900">No matching questions</div>
+            <div class="text-[12px] text-g-400">Try a different search term or contact support</div>
+            <button @click="openContact()" class="mt-2 px-4 h-10 rounded-full bg-p-300 text-[13px] font-semibold text-s-300 hover:bg-p-200">Contact support</button>
+          </div>
+        </template>
+      </div>
+    </div>
+
+    <!-- Sidebar -->
+    <aside class="flex flex-col gap-4">
+      <!-- Contact support card -->
+      <div class="bg-white rounded-xl shadow-card overflow-hidden">
+        <div class="p-5 flex flex-col gap-3" style="background: linear-gradient(135deg, #9FE870 0%, #40C4AA 100%);">
+          <div class="w-10 h-10 rounded-full bg-white/30 backdrop-blur flex items-center justify-center text-[18px]">💬</div>
+          <div>
+            <h3 class="text-[15px] font-semibold text-s-300">Still need help?</h3>
+            <p class="text-[12px] text-s-300/80 mt-1">Our support team replies within 2 hours during business days.</p>
+          </div>
+        </div>
+        <div class="p-4 flex flex-col gap-2">
+          <button @click="openContact()" class="w-full h-10 rounded-full bg-s-300 text-white text-[13px] font-semibold hover:bg-s-200 transition-colors flex items-center justify-center gap-2">
+            <span class="ic ic-16 ic-send text-white"></span>Open chat
+          </button>
+          <button @click="window.toast('Opening email client…', { type: 'info' })" class="w-full h-10 rounded-full bg-white border border-g-100 text-[13px] font-semibold text-g-900 hover:bg-g-25 flex items-center justify-center gap-2">
+            ✉️ Email support
+          </button>
+          <div class="flex items-center justify-between pt-2 mt-1 border-t border-g-100">
+            <span class="text-[11px] text-g-400">Avg response</span>
+            <span class="text-[11px] font-semibold text-g-900">< 2 hours</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Status / Recent updates -->
+      <div class="bg-white rounded-xl shadow-card p-4 flex flex-col gap-3">
+        <div class="flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-suc-100 animate-pulse"></span>
+          <span class="text-[12px] uppercase tracking-wider text-g-400 font-medium flex-1">System status</span>
+          <span class="text-[11px] font-semibold text-suc-200">All systems operational</span>
+        </div>
+        <div class="grid grid-cols-3 gap-2 pt-2 border-t border-g-100">
+          <div class="text-center">
+            <div class="w-2 h-2 rounded-full bg-suc-100 mx-auto"></div>
+            <div class="text-[10px] text-g-400 mt-1.5">API</div>
+          </div>
+          <div class="text-center">
+            <div class="w-2 h-2 rounded-full bg-suc-100 mx-auto"></div>
+            <div class="text-[10px] text-g-400 mt-1.5">Sync</div>
+          </div>
+          <div class="text-center">
+            <div class="w-2 h-2 rounded-full bg-suc-100 mx-auto"></div>
+            <div class="text-[10px] text-g-400 mt-1.5">Payments</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Resources -->
+      <div class="bg-white rounded-xl shadow-card flex flex-col">
+        <div class="p-4 border-b border-g-100">
+          <div class="text-[12px] uppercase tracking-wider text-g-400 font-medium">Resources</div>
+        </div>
+        <template x-for="r in resources" :key="r.label">
+          <button @click="window.toast('Opening ' + r.label + '…', { type: 'info' })" class="flex items-center gap-3 px-4 py-3 border-b border-g-100 last:border-0 hover:bg-g-25 transition-colors group text-left">
+            <span class="w-8 h-8 rounded-full flex items-center justify-center text-[14px]" :style="`background: ${r.bg}`" x-text="r.icon"></span>
+            <div class="flex-1 min-w-0">
+              <div class="text-[13px] font-medium text-g-900" x-text="r.label"></div>
+              <div class="text-[11px] text-g-400" x-text="r.desc"></div>
+            </div>
+            <span class="ic ic-16 ic-chevron-right text-g-400 group-hover:text-g-900 transition-colors"></span>
+          </button>
+        </template>
+      </div>
+
+      <!-- Tip / Quick wins -->
+      <div class="bg-[#FFF7E5] border border-[rgba(255,170,0,0.25)] rounded-xl p-4 flex flex-col gap-2">
+        <div class="flex items-center gap-2">
+          <span class="text-[16px]">💡</span>
+          <span class="text-[12px] font-semibold text-[#B8860B]">Quick tip</span>
+        </div>
+        <p class="text-[12px] text-g-900 leading-snug">Press <kbd class="text-[10px] font-mono bg-white border border-[rgba(255,170,0,0.3)] rounded px-1 py-0.5">⌘ K</kbd> anywhere in Monefy to open quick search and jump between pages instantly.</p>
+      </div>
+    </aside>
+  </section>
+
+  <!-- ===== Contact Modal ===== -->
+  <div x-show="contactOpen" x-cloak x-transition.opacity @keydown.escape.window="contactOpen = false"
+       class="fixed inset-0 bg-black/40 z-40 flex items-center justify-center px-4" @click.self="contactOpen = false">
+    <div x-show="contactOpen" x-transition class="bg-white rounded-2xl shadow-pop max-w-[460px] w-full">
+      <div class="h-16 px-5 border-b border-g-100 flex items-center gap-3">
+        <h2 class="flex-1 text-[16px] font-semibold text-g-900">Contact Support</h2>
+        <button @click="contactOpen = false" class="w-8 h-8 rounded-full hover:bg-g-50 flex items-center justify-center text-g-400">✕</button>
+      </div>
+      <form @submit.prevent="submitContact()" class="p-5 flex flex-col gap-4">
+        <div>
+          <label class="form-label">Topic</label>
+          <select class="form-select" x-model="contact.topic">
+            <option>Account & billing</option><option>Transactions</option><option>Cards & payments</option>
+            <option>Reports & analytics</option><option>Security</option><option>Other</option>
+          </select>
+        </div>
+        <div>
+          <label class="form-label">Priority</label>
+          <div class="flex items-center gap-2">
+            <template x-for="p in ['Low','Medium','High','Urgent']" :key="p">
+              <button type="button" @click="contact.priority = p" class="flex-1 h-10 rounded-lg border text-[12px] font-medium transition-all"
+                      :class="contact.priority === p ? 'border-s-300 bg-s-300 text-white' : 'border-g-100 bg-white text-g-900 hover:bg-g-25'" x-text="p"></button>
+            </template>
+          </div>
+        </div>
+        <div>
+          <label class="form-label">Subject</label>
+          <input type="text" class="form-input" x-model="contact.subject" required placeholder="Short description"/>
+        </div>
+        <div>
+          <label class="form-label">Message</label>
+          <textarea class="form-input form-textarea" x-model="contact.message" required placeholder="Describe your issue in detail…" rows="5"></textarea>
+        </div>
+        <p class="text-[11px] text-g-400">By submitting, you agree to our support terms. Our team will respond via email within 2 business hours.</p>
+        <div class="flex items-center gap-2 pt-1">
+          <button type="button" @click="contactOpen = false" class="flex-1 h-11 rounded-full border border-g-100 text-[14px] font-semibold text-g-900 hover:bg-g-25">Cancel</button>
+          <button type="submit" class="flex-1 h-11 rounded-full bg-p-300 hover:bg-p-200 text-[14px] font-semibold text-s-300">Send message</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+  function helpPage() {
+    return {
+      search: '',
+      openFaq: null,
+      activeCategory: 'getting-started',
+      contactOpen: false,
+      contact: { topic: 'Account & billing', priority: 'Medium', subject: '', message: '' },
+
+      popularTags: ['Reset password', 'Add card', 'Export data', 'Refund', 'API'],
+
+      categories: [
+        { id:'getting-started', icon:'🚀', label:'Getting Started',     count: 12, bg:'#EFFEFA',  accent:'#287F6E' },
+        { id:'accounts',        icon:'💳', label:'Cards & Accounts',    count: 18, bg:'#F4F0FF',  accent:'#936DFF' },
+        { id:'transactions',    icon:'💸', label:'Transactions',        count: 24, bg:'#FFF7E5',  accent:'#B8860B' },
+        { id:'reports',         icon:'📊', label:'Reports & Insights',  count:  9, bg:'#FEEFF2',  accent:'#DF1C41' },
+        { id:'invoices',        icon:'🧾', label:'Invoices & Billing',  count: 15, bg:'#F0FFE5',  accent:'#287F6E' },
+        { id:'security',        icon:'🔒', label:'Security & Privacy',  count: 11, bg:'#E5F0FF',  accent:'#1434CB' },
+        { id:'api',             icon:'⚙️', label:'API & Integrations',  count:  7, bg:'#F5F5F5',  accent:'#525252' },
+        { id:'billing',         icon:'⭐', label:'Plans & Pricing',     count: 10, bg:'#F4F0FF',  accent:'#936DFF' },
+      ],
+
+      faqs: [
+        { id:1, tag:'Getting Started', q:'How do I add a new card to my wallet?',           a:'Go to My Wallet and click "Add Card" in the top-right. Enter your card details (number, expiry, CVV, holder name) and choose whether to set it as your primary card. The card will appear instantly in your card list and you can start using it for transactions immediately.',  bg:'#EFFEFA', color:'#287F6E' },
+        { id:2, tag:'Accounts',        q:'Can I link multiple bank accounts?',                a:'Yes! Monefy supports unlimited card and bank connections on all plans. Navigate to Settings → Connected Accounts to add a new bank via our secure Plaid integration. We support 12,000+ banks worldwide.',                                                                bg:'#F4F0FF', color:'#936DFF' },
+        { id:3, tag:'Transactions',    q:'How do I categorize a transaction?',                a:'Open any transaction from the Transactions page and click the category badge in the detail drawer. You can choose from preset categories or create custom ones. Monefy also auto-categorizes most transactions using AI based on the merchant and amount patterns.',                  bg:'#FFF7E5', color:'#B8860B' },
+        { id:4, tag:'Transactions',    q:'Can I export my transactions to CSV?',              a:'Absolutely. From the Transactions page, click the "Export" button in the top-right action bar. You can also export filtered subsets (e.g., specific date range or category) — only the currently-filtered rows will be included in the export.',                              bg:'#FFF7E5', color:'#B8860B' },
+        { id:5, tag:'Security',        q:'Is my financial data secure?',                       a:'Yes. We use bank-grade 256-bit encryption for all data in transit and at rest. Your card CVV is never stored, and your banking credentials use Plaid\'s secure token-based authentication. We are SOC 2 Type II certified and GDPR/CCPA compliant.',                            bg:'#FEEFF2', color:'#DF1C41' },
+        { id:6, tag:'Security',        q:'How do I enable two-factor authentication?',         a:'Navigate to Settings → Security. Toggle on "Two-factor authentication" and scan the QR code with your authenticator app (Google Authenticator, Authy, or 1Password). You\'ll be prompted for a 6-digit code on every login after enabling.',                                        bg:'#FEEFF2', color:'#DF1C41' },
+        { id:7, tag:'Invoices',        q:'How do I create and send an invoice?',               a:'Go to Invoices and click "Create Invoice". Fill in the client name, email, description, amount, and due date. You can save as draft or send immediately. The client will receive a professional invoice email with payment instructions and a link to pay online.',           bg:'#F0FFE5', color:'#287F6E' },
+        { id:8, tag:'Billing',         q:'What payment methods do you accept for Premium?',    a:'We accept all major credit and debit cards (Visa, Mastercard, Amex), PayPal, Apple Pay, and Google Pay. Your subscription auto-renews monthly or annually based on your selection. You can change your payment method anytime in Settings → Billing.',                     bg:'#F4F0FF', color:'#936DFF' },
+        { id:9, tag:'Billing',         q:'Can I cancel my subscription anytime?',              a:'Yes. Cancel anytime from Settings → Billing → Change plan. You\'ll retain Premium access until the end of your current billing period, then your account will revert to the Free tier. No questions asked, no cancellation fees.',                                            bg:'#F4F0FF', color:'#936DFF' },
+        { id:10, tag:'Reports',        q:'How are my monthly reports generated?',              a:'Monthly reports compile all your transactions, categorize spending, and surface trends versus the previous month. They\'re generated on the 1st of each month at 8 AM in your local timezone and emailed to you if you have monthly reports enabled in Notifications settings.', bg:'#FEEFF2', color:'#DF1C41' },
+      ],
+
+      resources: [
+        { icon:'📚', label:'Documentation',     desc:'Full API reference',                  bg:'#F5F5F5' },
+        { icon:'🎥', label:'Video tutorials',   desc:'Watch walkthroughs',                  bg:'#FEEFF2' },
+        { icon:'🛠️', label:'Developer tools',   desc:'CLI, SDKs, webhooks',                 bg:'#F4F0FF' },
+        { icon:'📰', label:'What\'s new',       desc:'Latest product updates',              bg:'#EFFEFA' },
+        { icon:'🌐', label:'Community forum',   desc:'Connect with other users',            bg:'#FFF7E5' },
+      ],
+
+      init() {},
+
+      get searchResults() {
+        if (!this.search.trim()) return [];
+        const q = this.search.toLowerCase();
+        return this.faqs.filter(f => f.q.toLowerCase().includes(q) || f.a.toLowerCase().includes(q) || f.tag.toLowerCase().includes(q))
+                        .slice(0, 5)
+                        .map(f => ({ id: f.id, title: f.q, category: f.tag, read: '~ 2 min read' }));
+      },
+      get filteredFaq() {
+        if (!this.search.trim()) return this.faqs;
+        const q = this.search.toLowerCase();
+        return this.faqs.filter(f => f.q.toLowerCase().includes(q) || f.a.toLowerCase().includes(q) || f.tag.toLowerCase().includes(q));
+      },
+
+      toggleFaq(id) { this.openFaq = this.openFaq === id ? null : id; },
+      openArticle(r) {
+        this.openFaq = r.id;
+        setTimeout(() => {
+          const el = document.querySelector('[x-data] [x-show]');
+          el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 100);
+      },
+      openContact() { this.contactOpen = true; },
+      submitContact() {
+        this.contactOpen = false;
+        window.toast('Support request sent — we\'ll reply within 2 hours');
+        this.contact = { topic: 'Account & billing', priority: 'Medium', subject: '', message: '' };
+      },
+    }
+  }
+</script>

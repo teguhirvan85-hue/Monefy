@@ -1,0 +1,785 @@
+<div x-data="walletPage()" x-init="init()" class="absolute inset-0 flex flex-col">
+
+  <!-- ===== Top Header ===== -->
+  <header class="w-full bg-white border-b border-g-100 flex items-center justify-between px-4 py-6 shrink-0">
+    <button @click="window.toast('Command palette coming in Phase 7', { type: 'info' })" class="bg-white rounded-full shadow-card flex items-center gap-2 px-3 py-2 w-[238px] cursor-text hover:shadow-md transition-shadow focus:outline-none focus:ring-2 focus:ring-p-300">
+      <span class="ic ic-16 ic-search text-g-400"></span>
+      <span class="flex-1 text-left text-[14px] font-medium tracking-wide2 text-g-400">Search anything…</span>
+      <kbd class="text-[11px] font-medium bg-g-50 border border-g-100 rounded px-1.5 py-0.5 text-g-400">⌘K</kbd>
+    </button>
+    <div class="flex items-center gap-4">
+      <div class="relative" x-data="{ open: false }" @click.outside="open = false">
+        <button @click="open = !open" class="relative bg-white rounded-full shadow-card p-2.5 flex items-center justify-center hover:bg-g-25 transition-colors focus:outline-none focus:ring-2 focus:ring-p-300">
+          <span class="ic ic-20 ic-bell text-g-900"></span>
+          <span class="absolute top-[11px] right-[11px] w-1.5 h-1.5 rounded-full bg-err-100 border border-white"></span>
+        </button>
+        <div x-show="open" x-cloak x-transition.opacity class="absolute right-0 top-full mt-2 w-[300px] bg-white border border-g-100 rounded-xl shadow-pop overflow-hidden z-20">
+          <div class="px-4 py-3 border-b border-g-100">
+            <h3 class="text-[14px] font-semibold text-g-900">Notifications</h3>
+          </div>
+          <div class="p-4 text-[13px] text-g-400 text-center">No new wallet activity 🎉</div>
+        </div>
+      </div>
+      <div class="vdiv"></div>
+      <button @click="window.openReferral()" class="flex items-center gap-2 h-10 px-3 pr-4 rounded-full text-white text-[14px] font-medium tracking-wide2 border border-g-500 shadow-card hover:brightness-110 transition focus:outline-none focus:ring-2 focus:ring-p-300"
+              style="background-image: linear-gradient(180deg, rgba(255,255,255,0.24) 0%, rgba(255,255,255,0) 100%), linear-gradient(90deg, #163300 0%, #163300 100%);">
+        <span class="ic ic-20 ic-gift text-white"></span>Earn $90
+      </button>
+    </div>
+  </header>
+
+  <!-- ===== Title + Actions ===== -->
+  <section class="w-full border-b border-g-100 flex items-center gap-4 p-4 shrink-0">
+    <div class="flex-1 flex flex-col gap-1 min-w-0">
+      <h1 class="text-[24px] font-semibold leading-[1.3] tracking-tight2 text-g-900">My Wallet</h1>
+      <p class="text-[14px] text-g-400">Manage <span x-text="wallets.length"></span> connected accounts and cards</p>
+    </div>
+    <div class="flex items-center gap-2">
+      <button @click="transferOpen = true" class="bg-white border border-g-100 rounded-full shadow-card h-12 px-4 flex items-center gap-2 hover:bg-g-25 transition-colors focus:outline-none focus:ring-2 focus:ring-p-300">
+        <span class="ic ic-20 ic-switch text-g-900"></span>
+        <span class="text-[16px] font-semibold tracking-wide3 text-g-900">Transfer</span>
+      </button>
+      <button @click="addCardOpen = true" class="bg-p-300 rounded-full h-12 px-4 flex items-center gap-2 hover:bg-p-200 transition-colors focus:outline-none focus:ring-2 focus:ring-s-300">
+        <span class="ic ic-20 ic-plus" style="color:#163300"></span>
+        <span class="text-[16px] font-semibold tracking-wide3 text-s-300">Add Card</span>
+      </button>
+    </div>
+  </section>
+
+  <!-- ===== Stats Row ===== -->
+  <section class="w-full px-4 pt-4 flex items-start gap-4 shrink-0">
+    <div class="flex-1 bg-white rounded-xl shadow-card p-4">
+      <div class="flex items-center gap-3 mb-2">
+        <span class="flex-1 text-[14px] font-semibold tracking-wide2 text-g-900">Total Balance</span>
+        <span class="ic ic-16 ic-dots-v text-g-900"></span>
+      </div>
+      <div class="flex items-center gap-2">
+        <span class="text-[24px] font-semibold tracking-tight2 text-g-900 whitespace-nowrap" x-text="'$' + totalBalance.toLocaleString('en-US', { minimumFractionDigits: 2 })"></span>
+        <span class="h-6 bg-suc-0 border border-[rgba(64,196,170,0.2)] rounded-md px-1 flex items-center text-[12px] font-semibold tracking-wide1 text-suc-200">+2.5%</span>
+      </div>
+    </div>
+    <div class="flex-1 bg-white rounded-xl shadow-card p-4">
+      <div class="flex items-center gap-3 mb-2">
+        <span class="flex-1 text-[14px] font-semibold tracking-wide2 text-g-900">Available</span>
+        <span class="ic ic-16 ic-dots-v text-g-900"></span>
+      </div>
+      <span class="text-[24px] font-semibold tracking-tight2 text-g-900 whitespace-nowrap" x-text="'$' + totalAvailable.toLocaleString('en-US', { minimumFractionDigits: 2 })"></span>
+    </div>
+    <div class="flex-1 bg-white rounded-xl shadow-card p-4">
+      <div class="flex items-center gap-3 mb-2">
+        <span class="flex-1 text-[14px] font-semibold tracking-wide2 text-g-900">Pending</span>
+        <span class="ic ic-16 ic-dots-v text-g-900"></span>
+      </div>
+      <span class="text-[24px] font-semibold tracking-tight2 text-g-900 whitespace-nowrap" x-text="'$' + totalPending.toLocaleString('en-US', { minimumFractionDigits: 2 })"></span>
+    </div>
+    <div class="flex-1 bg-white rounded-xl shadow-card p-4">
+      <div class="flex items-center gap-3 mb-2">
+        <span class="flex-1 text-[14px] font-semibold tracking-wide2 text-g-900">Cards</span>
+        <span class="ic ic-16 ic-dots-v text-g-900"></span>
+      </div>
+      <span class="text-[24px] font-semibold tracking-tight2 text-g-900 whitespace-nowrap"><span x-text="wallets.length"></span> active</span>
+    </div>
+  </section>
+
+  <!-- ===== Main 2-column ===== -->
+  <section class="flex-1 px-4 pt-4 pb-4 flex gap-4 min-h-0">
+
+    <!-- Left column: Cards grid + spending -->
+    <div class="flex-1 flex flex-col gap-4 min-w-0">
+
+      <!-- Cards as compact selector list (no large visuals — those live in Card Details panel) -->
+      <div class="bg-white rounded-xl shadow-card p-4 flex flex-col gap-3 shrink-0">
+        <div class="flex items-center gap-3">
+          <span class="flex-1 text-[14px] font-semibold tracking-wide2 text-g-900">Your Cards <span class="text-g-400 font-medium" x-text="'(' + wallets.length + ')'"></span></span>
+          <button @click="addCardOpen = true" class="h-8 px-3 rounded-full bg-g-50 hover:bg-g-100 flex items-center gap-1.5 transition-colors focus:outline-none focus:ring-2 focus:ring-p-300" title="Add card">
+            <span class="ic ic-16 ic-plus text-g-900"></span>
+            <span class="text-[12px] font-medium text-g-900">Add</span>
+          </button>
+        </div>
+
+        <!-- Compact list — each row = small color swatch + name + last4 + balance + status -->
+        <div class="flex flex-col gap-1.5">
+          <template x-for="w in wallets" :key="w.id">
+            <button @click="selectWallet(w.id)"
+                    class="flex items-center gap-3 p-2.5 rounded-lg transition-all focus:outline-none focus:ring-2 focus:ring-p-300 border-2 cursor-pointer text-left"
+                    :class="selectedId === w.id ? 'bg-g-25 border-s-300' : 'border-transparent hover:bg-g-25 hover:border-g-100'">
+              <!-- Color stripe accent on left edge -->
+              <span class="w-1 h-10 rounded-full shrink-0" :style="'background: ' + w.gradient"></span>
+              <!-- Mini visual swatch -->
+              <span class="relative w-[42px] h-[28px] rounded-md shrink-0 overflow-hidden" :style="'background: ' + w.gradient">
+                <span class="absolute bottom-0.5 right-1 text-white text-[7px] font-bold opacity-90" x-text="w.brand.slice(0,4).toUpperCase()"></span>
+              </span>
+              <!-- Name + meta -->
+              <div class="flex flex-col flex-1 min-w-0">
+                <div class="flex items-center gap-1.5">
+                  <span class="text-[13px] font-semibold text-g-900 truncate" x-text="w.name"></span>
+                  <template x-if="w.isPrimary"><span class="bg-suc-0 border border-[rgba(64,196,170,0.2)] text-suc-200 text-[9px] font-bold tracking-wide rounded-full px-1.5 py-0.5 shrink-0">PRIMARY</span></template>
+                  <template x-if="w.isFrozen"><span class="bg-por-0 border border-por-25 text-por-100 text-[9px] font-bold tracking-wide rounded-full px-1.5 py-0.5 shrink-0">FROZEN</span></template>
+                </div>
+                <span class="text-[11px] text-g-400 mt-0.5" x-text="w.type + ' · •••• ' + w.last4"></span>
+              </div>
+              <!-- Balance + chevron -->
+              <div class="flex items-center gap-2 shrink-0">
+                <span class="text-[14px] font-semibold text-g-900" x-text="'$' + (w.balance >= 10000 ? (w.balance/1000).toFixed(1) + 'K' : w.balance.toFixed(0))"></span>
+                <span class="ic ic-16 ic-chevron-right transition-opacity" :class="selectedId === w.id ? 'opacity-100 text-s-300' : 'opacity-0 group-hover:opacity-100 text-g-400'"></span>
+              </div>
+            </button>
+          </template>
+        </div>
+      </div>
+
+      <!-- Spending breakdown for selected wallet -->
+      <div class="bg-white rounded-xl shadow-card p-4 flex flex-col gap-3 flex-1 min-h-0">
+        <!-- Header: title + range toggle -->
+        <div class="flex items-center gap-3">
+          <span class="flex-1 text-[14px] font-semibold tracking-wide2 text-g-900">Spending — <span x-text="selected.name"></span></span>
+          <div class="bg-g-50 border border-g-100 rounded-lg flex items-center overflow-hidden">
+            <template x-for="r in spendRanges" :key="r">
+              <button @click="spendRange = r" class="px-3 py-1.5 text-[11px] font-medium transition-colors" :class="spendRange === r ? 'bg-white text-g-900 font-semibold' : 'text-g-400 hover:text-g-900'" x-text="r"></button>
+            </template>
+          </div>
+        </div>
+
+        <!-- Inline KPI row (Spent / Income / Avg) -->
+        <div class="flex items-end gap-6">
+          <div>
+            <div class="text-[10px] text-g-400 uppercase tracking-wider">Spent · <span x-text="spendRange"></span></div>
+            <div class="text-[22px] font-semibold tracking-tight2 text-g-900 leading-none mt-1" x-text="'$' + selected.monthlySpend.toLocaleString('en-US', { minimumFractionDigits: 2 })"></div>
+          </div>
+          <div class="w-px h-8 bg-g-100"></div>
+          <div>
+            <div class="text-[10px] text-g-400 uppercase tracking-wider">Income</div>
+            <div class="text-[16px] font-semibold text-suc-200 leading-none mt-1" x-text="'+ $' + selected.monthlyIn.toLocaleString('en-US', { minimumFractionDigits: 2 })"></div>
+          </div>
+          <div class="w-px h-8 bg-g-100"></div>
+          <div>
+            <div class="text-[10px] text-g-400 uppercase tracking-wider">Avg / month</div>
+            <div class="text-[16px] font-semibold text-g-900 leading-none mt-1" x-text="'$' + (selected.monthlySpend / spendBars.length).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })"></div>
+          </div>
+        </div>
+
+        <!-- Chart area: full-width with Y-axis labels + grid lines + bars -->
+        <div class="flex-1 min-h-0 relative">
+          <!-- Y-axis labels (absolute left) -->
+          <div class="absolute bottom-5 left-0 top-0 flex flex-col justify-between text-[10px] font-medium text-g-400 text-right pr-2 w-9">
+            <span x-text="formatK(chartMax)"></span>
+            <span x-text="formatK(chartMax / 2)"></span>
+            <span>0</span>
+          </div>
+
+          <!-- Chart canvas -->
+          <div class="absolute left-[40px] right-0 top-0 bottom-0 flex flex-col">
+            <!-- Bars + grid container -->
+            <div class="relative flex-1 min-h-[100px]">
+              <!-- Grid lines (dashed) -->
+              <div class="absolute inset-0 flex flex-col justify-between pointer-events-none">
+                <div class="grid-line"></div>
+                <div class="grid-line"></div>
+                <div class="grid-line"></div>
+              </div>
+              <!-- Bars (absolute filling container, items-end at bottom) -->
+              <div class="absolute inset-0 flex items-end gap-2">
+                <template x-for="(v, i) in spendBars" :key="i">
+                  <div class="relative flex-1 rounded-md transition-all hover:opacity-90 cursor-pointer group"
+                       :style="`height: ${Math.max((v / chartMax) * 100, 3)}%; background: ${i === spendBars.length - 1 ? '#9FE870' : '#F5F5F5'};`">
+                    <!-- Hover tooltip -->
+                    <span class="absolute -top-8 left-1/2 -translate-x-1/2 bg-g-900 text-white text-[10px] font-medium px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none shadow-pop"
+                          x-text="spendBarLabels[i] + ' · $' + v.toLocaleString('en-US')"></span>
+                  </div>
+                </template>
+              </div>
+            </div>
+            <!-- X-axis labels -->
+            <div class="flex items-center gap-2 mt-1.5 h-4">
+              <template x-for="(label, i) in spendBarLabels" :key="i">
+                <span class="flex-1 text-[10px] font-medium text-center"
+                      :class="i === spendBars.length - 1 ? 'text-g-900 font-semibold' : 'text-g-400'"
+                      x-text="label"></span>
+              </template>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right column: Selected wallet detail + quick actions + activity -->
+    <div class="w-[380px] flex flex-col gap-4 shrink-0">
+
+      <!-- Big selected card -->
+      <div class="bg-white rounded-xl shadow-card p-4 flex flex-col gap-4">
+        <div class="flex items-center gap-3">
+          <span class="flex-1 text-[14px] font-semibold tracking-wide2 text-g-900">Card Details</span>
+          <button @click="openCardMenu($event)" class="w-7 h-7 rounded-full hover:bg-g-50 flex items-center justify-center transition-colors focus:outline-none focus:ring-2 focus:ring-p-300">
+            <span class="ic ic-16 ic-dots-v text-g-900"></span>
+          </button>
+        </div>
+
+        <!-- ===== Card visual (using aspect-ratio class + combined inline style) ===== -->
+        <div class="relative rounded-2xl overflow-hidden text-white aspect-[1.586/1] shadow-lg"
+             :style="'background: ' + selected.gradient">
+          <!-- Subtle pattern overlay -->
+          <div class="absolute inset-0 opacity-20" style="background-image: radial-gradient(circle at 20% 20%, rgba(255,255,255,0.3) 0%, transparent 50%), radial-gradient(circle at 80% 80%, rgba(255,255,255,0.15) 0%, transparent 50%);"></div>
+
+          <div class="absolute inset-0 p-5 flex flex-col">
+            <!-- Top row: name + badges + eye toggle (all inline, no overlap) -->
+            <div class="flex items-start gap-2">
+              <div class="flex flex-col min-w-0 flex-1">
+                <span class="text-[13px] font-semibold leading-tight" x-text="selected.name"></span>
+                <span class="text-[10px] opacity-70 leading-tight mt-0.5" x-text="selected.type"></span>
+              </div>
+              <template x-if="selected.isPrimary">
+                <span class="bg-white/25 backdrop-blur rounded-full px-2 py-0.5 text-[9px] font-bold tracking-wider shrink-0 h-[18px] flex items-center">PRIMARY</span>
+              </template>
+              <template x-if="selected.isFrozen">
+                <span class="bg-white/25 backdrop-blur rounded-full px-2 py-0.5 text-[9px] font-bold tracking-wider shrink-0 h-[18px] flex items-center">FROZEN ❄</span>
+              </template>
+              <button @click.stop="showNumber = !showNumber"
+                      class="bg-white/20 backdrop-blur hover:bg-white/30 transition-colors rounded-full w-[26px] h-[26px] flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-white/50 shrink-0 -mt-1 -mr-1"
+                      :title="showNumber ? 'Hide number' : 'Show number'">
+                <span class="ic ic-16 ic-eye text-white" :class="{ 'opacity-60': !showNumber }"></span>
+              </button>
+            </div>
+
+            <!-- Middle: card number -->
+            <div class="flex-1 flex flex-col justify-center -mt-2">
+              <span class="text-[19px] font-mono tracking-[3px]" x-text="showNumber ? selected.number : '•••• •••• •••• ' + selected.last4"></span>
+            </div>
+
+            <!-- Bottom row: holder / expires / brand -->
+            <div class="flex items-end gap-3">
+              <div class="flex flex-col flex-1 min-w-0">
+                <span class="text-[8px] opacity-60 uppercase tracking-wider leading-none">Card Holder</span>
+                <span class="text-[11px] font-semibold mt-1 truncate" x-text="selected.holder"></span>
+              </div>
+              <div class="flex flex-col shrink-0">
+                <span class="text-[8px] opacity-60 uppercase tracking-wider leading-none">Expires</span>
+                <span class="text-[11px] font-semibold mt-1" x-text="selected.expiry"></span>
+              </div>
+              <span class="text-[14px] font-extrabold tracking-wider italic shrink-0 self-end leading-none" x-text="selected.brand.toUpperCase()"></span>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- ===== Balance breakdown — compact inline ===== -->
+        <div class="bg-g-25 rounded-xl border border-g-100 px-4 py-3 flex items-center gap-4">
+          <div class="flex-1 min-w-0">
+            <div class="text-[10px] uppercase tracking-wider text-g-400 font-medium">Balance</div>
+            <div class="text-[22px] font-semibold tracking-tight2 text-g-900 leading-none mt-1" x-text="'$' + selected.balance.toLocaleString('en-US', { minimumFractionDigits: 2 })"></div>
+          </div>
+          <div class="w-px h-9 bg-g-100"></div>
+          <div class="flex-shrink-0">
+            <div class="flex items-center gap-1">
+              <span class="w-1.5 h-1.5 rounded-full bg-suc-100"></span>
+              <span class="text-[10px] text-g-400 font-medium">Available</span>
+            </div>
+            <div class="text-[13px] font-semibold text-g-900 mt-0.5" x-text="'$' + selected.available.toLocaleString('en-US', { maximumFractionDigits: 0 })"></div>
+          </div>
+          <div class="flex-shrink-0">
+            <div class="flex items-center gap-1">
+              <span class="w-1.5 h-1.5 rounded-full bg-[#FFA500]"></span>
+              <span class="text-[10px] text-g-400 font-medium">Pending</span>
+            </div>
+            <div class="text-[13px] font-semibold text-g-900 mt-0.5" x-text="'$' + selected.pending.toLocaleString('en-US', { maximumFractionDigits: 0 })"></div>
+          </div>
+        </div>
+
+        <!-- ===== Quick action segmented control ===== -->
+        <div class="qa-bar">
+          <button @click="quickAction('top-up')" :disabled="selected.isFrozen"
+                  class="qa-btn" :class="{ 'qa-disabled': selected.isFrozen }"
+                  title="Top up balance">
+            <span class="qa-icon" style="background: #EFFEFA;"><span class="ic ic-16 ic-plus" style="color:#287F6E;"></span></span>
+            <span class="qa-label">Top Up</span>
+          </button>
+          <button @click="quickAction('send')" :disabled="selected.isFrozen"
+                  class="qa-btn" :class="{ 'qa-disabled': selected.isFrozen }"
+                  title="Send money">
+            <span class="qa-icon" style="background: #F4F0FF;"><span class="ic ic-16 ic-send" style="color:#936DFF;"></span></span>
+            <span class="qa-label">Send</span>
+          </button>
+          <button @click="quickAction('receive')"
+                  class="qa-btn"
+                  title="Receive money">
+            <span class="qa-icon" style="background: #FFF7E5;"><span class="ic ic-16 ic-arrow-down" style="color:#B8860B;"></span></span>
+            <span class="qa-label">Receive</span>
+          </button>
+          <button @click="quickAction('withdraw')" :disabled="selected.isFrozen"
+                  class="qa-btn" :class="{ 'qa-disabled': selected.isFrozen }"
+                  title="Withdraw funds">
+            <span class="qa-icon" style="background: #FEEFF2;"><span class="ic ic-16 ic-arrow-up" style="color:#95122B;"></span></span>
+            <span class="qa-label">Withdraw</span>
+          </button>
+        </div>
+
+        <template x-if="selected.isFrozen">
+          <div class="bg-por-0 border border-por-25 rounded-lg p-3 text-[12px] text-por-100 flex items-center gap-2">
+            <span class="ic ic-16 ic-snowflake shrink-0" style="color:#936DFF;"></span>
+            <span class="flex-1">This card is frozen. Most actions are disabled.</span>
+            <button @click="toggleFreeze()" class="font-semibold underline shrink-0">Unfreeze</button>
+          </div>
+        </template>
+      </div>
+
+      <!-- Recent activity for this card — compact rows -->
+      <div class="bg-white rounded-xl shadow-card flex flex-col flex-1 min-h-0 overflow-hidden">
+        <div class="flex items-center gap-3 px-4 py-3 border-b border-g-100 shrink-0">
+          <span class="flex-1 text-[13px] font-semibold tracking-wide2 text-g-900">Recent Activity</span>
+          <a href="#/transactions" class="text-[12px] text-s-300 font-medium hover:underline">View all →</a>
+        </div>
+        <div class="flex-1 overflow-y-auto">
+          <template x-for="t in walletTransactions" :key="t.id">
+            <button @click="window.location.hash = '#/transactions'"
+                    class="w-full flex items-center gap-2.5 px-3 py-2 border-b border-g-100 last:border-0 hover:bg-g-25 transition-colors text-left">
+              <template x-if="t.avatar"><img :src="t.avatar" alt="" class="w-7 h-7 rounded-full object-cover shrink-0" /></template>
+              <template x-if="t.brandIcon"><div class="w-7 h-7 rounded-full overflow-hidden flex items-center justify-center shrink-0" :style="'background:' + t.brandBg"><img :src="t.brandIcon" alt="" class="w-3.5 h-3.5" /></div></template>
+              <div class="flex-1 min-w-0">
+                <div class="text-[12px] font-medium text-g-900 truncate leading-tight" x-text="t.name"></div>
+                <div class="text-[10px] text-g-400 leading-tight mt-0.5" x-text="t.type + ' · ' + formatShortDate(t.date)"></div>
+              </div>
+              <span class="text-[12px] font-semibold whitespace-nowrap" :class="t.amount >= 0 ? 'text-suc-200' : 'text-g-900'" x-text="formatAmount(t.amount)"></span>
+            </button>
+          </template>
+          <template x-if="walletTransactions.length === 0">
+            <div class="px-4 py-8 flex flex-col items-center gap-2 text-center">
+              <div class="w-10 h-10 rounded-full bg-g-50 flex items-center justify-center">
+                <span class="ic ic-16 ic-clipboard text-g-300"></span>
+              </div>
+              <div class="text-[12px] text-g-400">No recent activity</div>
+            </div>
+          </template>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== Context Menu (popup) ===== -->
+  <div x-show="menu.open" x-cloak @click.outside="menu.open = false" :style="`top: ${menu.y}px; left: ${menu.x}px;`"
+       class="fixed bg-white border border-g-100 popup-menu shadow-pop z-50">
+    <template x-for="(item, idx) in menu.items" :key="item.label">
+      <div>
+        <div x-show="item.divider" class="popup-menu-divider"></div>
+        <button @click="runMenu(item)" :disabled="item.disabled"
+                class="popup-menu-item" :class="{ 'destructive': item.destructive }">
+          <span class="ic-wrap"><span class="ic ic-16" :class="item.icon" :style="`color: ${item.destructive ? '#95122B' : '#0A0A0A'}`"></span></span>
+          <span x-text="item.label"></span>
+          <span x-show="item.disabled" class="popup-menu-shortcut">Active</span>
+        </button>
+      </div>
+    </template>
+  </div>
+
+  <!-- ===== Add Card Modal ===== -->
+  <div x-show="addCardOpen" x-cloak x-transition.opacity @keydown.escape.window="addCardOpen = false" class="fixed inset-0 bg-black/40 z-40 flex items-center justify-center px-4" @click.self="addCardOpen = false">
+    <div x-show="addCardOpen" x-transition class="bg-white rounded-2xl shadow-pop max-w-[480px] w-full">
+      <div class="h-16 px-5 border-b border-g-100 flex items-center gap-3">
+        <h2 class="flex-1 text-[16px] font-semibold text-g-900">Add New Card</h2>
+        <button @click="addCardOpen = false" class="w-8 h-8 rounded-full hover:bg-g-50 flex items-center justify-center text-g-400 hover:text-g-900 transition-colors">✕</button>
+      </div>
+      <form @submit.prevent="submitAddCard()" class="p-5 flex flex-col gap-4">
+        <div class="flex flex-col gap-1.5">
+          <label class="text-[12px] font-medium text-g-400">Card name</label>
+          <input type="text" x-model="newCard.name" required placeholder="e.g. Travel Card" class="h-10 px-3 rounded-lg border border-g-100 text-[14px] text-g-900 focus:outline-none focus:ring-2 focus:ring-p-300"/>
+        </div>
+        <div class="flex flex-col gap-1.5">
+          <label class="text-[12px] font-medium text-g-400">Card number</label>
+          <input type="text" x-model="newCard.number" required maxlength="19" placeholder="1234 5678 9012 3456" @input="newCard.number = $event.target.value.replace(/[^0-9 ]/g,'').replace(/(.{4})/g,'$1 ').trim().slice(0,19)" class="h-10 px-3 rounded-lg border border-g-100 text-[14px] text-g-900 font-mono focus:outline-none focus:ring-2 focus:ring-p-300"/>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div class="flex flex-col gap-1.5">
+            <label class="text-[12px] font-medium text-g-400">Expiry (MM/YY)</label>
+            <input type="text" x-model="newCard.expiry" required maxlength="5" placeholder="12/27" class="h-10 px-3 rounded-lg border border-g-100 text-[14px] text-g-900 focus:outline-none focus:ring-2 focus:ring-p-300"/>
+          </div>
+          <div class="flex flex-col gap-1.5">
+            <label class="text-[12px] font-medium text-g-400">CVV</label>
+            <input type="password" x-model="newCard.cvv" required maxlength="4" placeholder="•••" class="h-10 px-3 rounded-lg border border-g-100 text-[14px] text-g-900 focus:outline-none focus:ring-2 focus:ring-p-300"/>
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div class="flex flex-col gap-1.5">
+            <label class="text-[12px] font-medium text-g-400">Card holder name</label>
+            <input type="text" x-model="newCard.holder" required placeholder="JOHN DOE" class="h-10 px-3 rounded-lg border border-g-100 text-[14px] text-g-900 focus:outline-none focus:ring-2 focus:ring-p-300"/>
+          </div>
+          <div class="flex flex-col gap-1.5">
+            <label class="text-[12px] font-medium text-g-400">Card type</label>
+            <select x-model="newCard.type" class="h-10 px-3 rounded-lg border border-g-100 text-[14px] text-g-900 bg-white focus:outline-none focus:ring-2 focus:ring-p-300">
+              <option>Visa Debit</option><option>Visa Credit</option><option>Mastercard Debit</option><option>Mastercard Credit</option><option>PayPal</option>
+            </select>
+          </div>
+        </div>
+        <label class="flex items-center gap-2 text-[13px] text-g-900">
+          <input type="checkbox" x-model="newCard.setPrimary" class="w-4 h-4 accent-s-300"/>
+          Set as primary card
+        </label>
+        <div class="flex items-center gap-2 pt-2">
+          <button type="button" @click="addCardOpen = false" class="flex-1 h-11 rounded-full border border-g-100 text-[14px] font-semibold text-g-900 hover:bg-g-25 transition-colors">Cancel</button>
+          <button type="submit" class="flex-1 h-11 rounded-full bg-p-300 hover:bg-p-200 text-[14px] font-semibold text-s-300 transition-colors">Add Card</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ===== Transfer Modal ===== -->
+  <div x-show="transferOpen" x-cloak x-transition.opacity @keydown.escape.window="transferOpen = false" class="fixed inset-0 bg-black/40 z-40 flex items-center justify-center px-4" @click.self="transferOpen = false">
+    <div x-show="transferOpen" x-transition class="bg-white rounded-2xl shadow-pop max-w-[460px] w-full">
+      <div class="h-16 px-5 border-b border-g-100 flex items-center gap-3">
+        <h2 class="flex-1 text-[16px] font-semibold text-g-900">Transfer Between Cards</h2>
+        <button @click="transferOpen = false" class="w-8 h-8 rounded-full hover:bg-g-50 flex items-center justify-center text-g-400 hover:text-g-900 transition-colors">✕</button>
+      </div>
+      <form @submit.prevent="submitTransfer()" class="p-5 flex flex-col gap-4">
+        <div class="flex flex-col gap-1.5">
+          <label class="text-[12px] font-medium text-g-400">From</label>
+          <select x-model="transfer.from" class="h-11 px-3 rounded-lg border border-g-100 text-[14px] text-g-900 bg-white focus:outline-none focus:ring-2 focus:ring-p-300">
+            <template x-for="w in wallets" :key="w.id"><option :value="w.id" x-text="w.name + ' (•••• ' + w.last4 + ') — $' + w.balance.toLocaleString('en-US', { minimumFractionDigits: 2 })"></option></template>
+          </select>
+        </div>
+        <div class="flex justify-center">
+          <button type="button" @click="swapTransfer()" class="w-10 h-10 rounded-full border border-g-100 bg-white hover:bg-g-25 flex items-center justify-center text-g-900 transition-colors" title="Swap">↕</button>
+        </div>
+        <div class="flex flex-col gap-1.5">
+          <label class="text-[12px] font-medium text-g-400">To</label>
+          <select x-model="transfer.to" class="h-11 px-3 rounded-lg border border-g-100 text-[14px] text-g-900 bg-white focus:outline-none focus:ring-2 focus:ring-p-300">
+            <template x-for="w in wallets" :key="w.id"><option :value="w.id" x-text="w.name + ' (•••• ' + w.last4 + ')'"></option></template>
+          </select>
+        </div>
+        <div class="flex flex-col gap-1.5">
+          <label class="text-[12px] font-medium text-g-400">Amount (USD)</label>
+          <input type="number" x-model.number="transfer.amount" step="0.01" min="0.01" required placeholder="0.00" class="h-11 px-3 rounded-lg border border-g-100 text-[16px] font-semibold text-g-900 focus:outline-none focus:ring-2 focus:ring-p-300"/>
+          <div class="flex items-center gap-2 mt-1">
+            <template x-for="amt in [50, 100, 500, 1000]" :key="amt">
+              <button type="button" @click="transfer.amount = amt" class="px-3 py-1 rounded-full border border-g-100 hover:bg-g-25 text-[11px] font-medium text-g-900 transition-colors" x-text="'$' + amt"></button>
+            </template>
+          </div>
+        </div>
+        <div class="flex flex-col gap-1.5">
+          <label class="text-[12px] font-medium text-g-400">Note (optional)</label>
+          <input type="text" x-model="transfer.note" placeholder="Reason for transfer" class="h-10 px-3 rounded-lg border border-g-100 text-[14px] text-g-900 focus:outline-none focus:ring-2 focus:ring-p-300"/>
+        </div>
+        <template x-if="transfer.from && transfer.to && transfer.from === transfer.to">
+          <div class="bg-err-0 border border-[rgba(223,28,65,0.2)] rounded-lg p-2.5 text-[12px] text-err-200">Source and destination must be different.</div>
+        </template>
+        <div class="flex items-center gap-2 pt-1">
+          <button type="button" @click="transferOpen = false" class="flex-1 h-11 rounded-full border border-g-100 text-[14px] font-semibold text-g-900 hover:bg-g-25 transition-colors">Cancel</button>
+          <button type="submit" :disabled="transfer.from === transfer.to || !transfer.amount" class="flex-1 h-11 rounded-full bg-p-300 hover:bg-p-200 disabled:opacity-40 disabled:cursor-not-allowed text-[14px] font-semibold text-s-300 transition-colors">Transfer</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ===== Rename Modal ===== -->
+  <div x-show="renameOpen" x-cloak x-transition.opacity @keydown.escape.window="renameOpen = false"
+       class="fixed inset-0 bg-black/40 z-[60] flex items-center justify-center px-4" @click.self="renameOpen = false">
+    <div x-show="renameOpen" x-transition class="bg-white rounded-2xl shadow-pop max-w-[400px] w-full">
+      <div class="h-16 px-5 border-b border-g-100 flex items-center gap-3">
+        <h2 class="flex-1 text-[16px] font-semibold text-g-900">Rename Card</h2>
+        <button @click="renameOpen = false" class="w-8 h-8 rounded-full hover:bg-g-50 flex items-center justify-center text-g-400 hover:text-g-900 transition-colors">✕</button>
+      </div>
+      <form @submit.prevent="submitRename()" class="p-5 flex flex-col gap-4">
+        <div class="flex flex-col gap-1.5">
+          <label class="text-[12px] font-medium text-g-400">New card name</label>
+          <input type="text" x-model="renameValue" x-ref="renameInput" required maxlength="40"
+                 class="h-11 px-3 rounded-lg border border-g-100 text-[14px] text-g-900 focus:outline-none focus:ring-2 focus:ring-p-300"/>
+          <span class="text-[11px] text-g-400" x-text="renameValue.length + '/40'"></span>
+        </div>
+        <div class="flex items-center gap-2 pt-1">
+          <button type="button" @click="renameOpen = false" class="flex-1 h-11 rounded-full border border-g-100 text-[14px] font-semibold text-g-900 hover:bg-g-25 transition-colors">Cancel</button>
+          <button type="submit" :disabled="!renameValue.trim()" class="flex-1 h-11 rounded-full bg-p-300 hover:bg-p-200 disabled:opacity-40 disabled:cursor-not-allowed text-[14px] font-semibold text-s-300 transition-colors">Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ===== Quick Action Modal (Top Up / Send / Receive / Withdraw) ===== -->
+  <div x-show="quickActionOpen" x-cloak x-transition.opacity @keydown.escape.window="quickActionOpen = false" class="fixed inset-0 bg-black/40 z-40 flex items-center justify-center px-4" @click.self="quickActionOpen = false">
+    <div x-show="quickActionOpen" x-transition class="bg-white rounded-2xl shadow-pop max-w-[420px] w-full">
+      <div class="h-16 px-5 border-b border-g-100 flex items-center gap-3">
+        <h2 class="flex-1 text-[16px] font-semibold text-g-900" x-text="quickActionLabel"></h2>
+        <button @click="quickActionOpen = false" class="w-8 h-8 rounded-full hover:bg-g-50 flex items-center justify-center text-g-400 hover:text-g-900 transition-colors">✕</button>
+      </div>
+      <form @submit.prevent="submitQuickAction()" class="p-5 flex flex-col gap-4">
+        <div class="bg-g-25 rounded-lg border border-g-100 p-3 flex items-center gap-3">
+          <div class="w-10 h-7 rounded shrink-0" :style="'background: ' + selected.gradient"></div>
+          <div class="flex-1 min-w-0">
+            <div class="text-[13px] font-semibold text-g-900 truncate" x-text="selected.name"></div>
+            <div class="text-[11px] text-g-400" x-text="'•••• ' + selected.last4"></div>
+          </div>
+          <div class="text-[13px] font-semibold text-g-900" x-text="'$' + selected.balance.toLocaleString('en-US', { minimumFractionDigits: 2 })"></div>
+        </div>
+        <div x-show="quickActionMode === 'send'" class="flex flex-col gap-1.5">
+          <label class="text-[12px] font-medium text-g-400">Recipient</label>
+          <input type="text" x-model="quickAmount.recipient" placeholder="Name, email, or phone" class="h-10 px-3 rounded-lg border border-g-100 text-[14px] text-g-900 focus:outline-none focus:ring-2 focus:ring-p-300"/>
+        </div>
+        <div class="flex flex-col gap-1.5">
+          <label class="text-[12px] font-medium text-g-400">Amount (USD)</label>
+          <input type="number" x-model.number="quickAmount.value" step="0.01" min="0.01" required placeholder="0.00" class="h-11 px-3 rounded-lg border border-g-100 text-[16px] font-semibold text-g-900 focus:outline-none focus:ring-2 focus:ring-p-300"/>
+          <div class="flex items-center gap-2 mt-1">
+            <template x-for="amt in [25, 50, 100, 500]" :key="amt">
+              <button type="button" @click="quickAmount.value = amt" class="px-3 py-1 rounded-full border border-g-100 hover:bg-g-25 text-[11px] font-medium text-g-900 transition-colors" x-text="'$' + amt"></button>
+            </template>
+          </div>
+        </div>
+        <div class="flex items-center gap-2 pt-1">
+          <button type="button" @click="quickActionOpen = false" class="flex-1 h-11 rounded-full border border-g-100 text-[14px] font-semibold text-g-900 hover:bg-g-25 transition-colors">Cancel</button>
+          <button type="submit" :disabled="!quickAmount.value" class="flex-1 h-11 rounded-full bg-p-300 hover:bg-p-200 disabled:opacity-40 disabled:cursor-not-allowed text-[14px] font-semibold text-s-300 transition-colors" x-text="quickActionLabel.split(' ')[0]"></button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+  function walletPage() {
+    return {
+      wallets: [],
+      selectedId: 'w001',
+      showNumber: false,
+      view: 'grid',
+      spendRange: '6M',
+      spendRanges: ['1M', '3M', '6M', '1Y'],
+
+      addCardOpen: false, transferOpen: false, quickActionOpen: false, renameOpen: false,
+      newCard: { name: '', number: '', expiry: '', cvv: '', holder: '', type: 'Visa Debit', setPrimary: false },
+      transfer: { from: 'w001', to: 'w003', amount: null, note: '' },
+      quickActionMode: 'top-up',
+      quickAmount: { value: null, recipient: '' },
+      renameTarget: null,
+      renameValue: '',
+
+      menu: { open: false, x: 0, y: 0, items: [] },
+
+      init() {
+        this.wallets = [...window.MonefyData.wallets];
+      },
+
+      get selected() {
+        return this.wallets.find(w => w.id === this.selectedId) || this.wallets[0] || {
+          id: '', name: 'No card', type: '—', brand: '—', number: '', last4: '0000',
+          holder: '—', expiry: '—', balance: 0, available: 0, pending: 0,
+          gradient: 'linear-gradient(135deg,#A3A3A3,#525252)', isPrimary: false, isFrozen: false,
+          monthlySpend: 0, monthlyIn: 0
+        };
+      },
+      get hasWallets() { return this.wallets.length > 0; },
+
+      // Spending chart data — reacts to selected wallet + range
+      // Each wallet has a unique shape pattern; values scaled by its monthlySpend.
+      get spendConfig() {
+        const ranges = {
+          '1M': { count: 4,  labels: ['W1','W2','W3','W4'],                                divisor: 4 },
+          '3M': { count: 3,  labels: ['Jun','Jul','Aug'],                                  divisor: 1 },
+          '6M': { count: 6,  labels: ['Mar','Apr','May','Jun','Jul','Aug'],                divisor: 1 },
+          '1Y': { count: 12, labels: ['Sep','Oct','Nov','Dec','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug'], divisor: 1 },
+        };
+        return ranges[this.spendRange] || ranges['6M'];
+      },
+      get spendBarLabels() { return this.spendConfig.labels; },
+      get spendBars() {
+        const cfg = this.spendConfig;
+        const base = (this.selected.monthlySpend || 1000) / cfg.divisor;
+        // Per-wallet shape pattern (last value is biggest = current month is highest)
+        const patterns = {
+          w001: [0.45, 0.78, 0.55, 1.05, 0.68, 1.30, 0.50, 1.18, 0.85, 0.40, 1.10, 1.35],
+          w002: [0.80, 1.10, 0.60, 0.95, 1.25, 0.70, 1.05, 0.55, 1.30, 0.85, 0.50, 1.15],
+          w003: [0.20, 0.45, 0.10, 0.65, 0.30, 0.85, 0.15, 0.50, 0.75, 0.25, 0.40, 0.95],
+          w004: [0.65, 0.40, 0.95, 0.55, 0.80, 0.50, 0.70, 1.15, 0.35, 0.90, 0.60, 1.25],
+        };
+        const pat = patterns[this.selected.id] || patterns.w001;
+        const bars = [];
+        for (let i = 0; i < cfg.count; i++) {
+          // Pick from the tail of the pattern so the last bar (current) is always emphasized
+          const idx = (pat.length - cfg.count + i + pat.length) % pat.length;
+          bars.push(Math.round(base * pat[idx]));
+        }
+        return bars;
+      },
+      get chartMax() {
+        const m = Math.max(...this.spendBars, 1);
+        // Round up to nearest "nice" 1/2/5 × 10^N
+        const pow = Math.pow(10, Math.floor(Math.log10(m)));
+        const n = m / pow;
+        let nice;
+        if      (n <= 1) nice = 1;
+        else if (n <= 2) nice = 2;
+        else if (n <= 5) nice = 5;
+        else             nice = 10;
+        return nice * pow;
+      },
+      get totalBalance() { return this.wallets.reduce((s, w) => s + w.balance, 0); },
+      get totalAvailable() { return this.wallets.reduce((s, w) => s + (w.available || w.balance), 0); },
+      get totalPending() { return this.wallets.reduce((s, w) => s + (w.pending || 0), 0); },
+      get walletTransactions() {
+        // Filter by walletId, sort newest first, take 5
+        return window.MonefyData.transactions
+          .filter(t => t.walletId === this.selectedId)
+          .sort((a, b) => new Date(b.date) - new Date(a.date))
+          .slice(0, 5);
+      },
+      get quickActionLabel() {
+        return { 'top-up': 'Top Up Wallet', 'send': 'Send Money', 'receive': 'Receive Money', 'withdraw': 'Withdraw Funds' }[this.quickActionMode] || 'Quick Action';
+      },
+
+      selectWallet(id) { this.selectedId = id; this.showNumber = false; window.toast('Switched to ' + this.wallets.find(w => w.id === id).name, { type: 'info', duration: 1500 }); },
+
+      formatAmount(n) { return window.MonefyData.formatAmount(n); },
+      formatShortDate(iso) { const d = new Date(iso); return d.toLocaleDateString('en-US', { month:'short', day:'numeric' }); },
+      formatK(v) {
+        if (v >= 1000) {
+          const k = v / 1000;
+          return '$' + (k >= 10 ? k.toFixed(0) : k.toFixed(1).replace('.0','')) + 'K';
+        }
+        return '$' + Math.round(v);
+      },
+
+      // Card menu
+      openCardMenu(e) {
+        const r = e.currentTarget.getBoundingClientRect();
+        this.menu = {
+          open: true,
+          x: Math.min(r.right - 220, window.innerWidth - 240),
+          y: r.bottom + 6,
+          items: [
+            { icon: 'ic-edit',      label: 'Rename card',                                                action: 'rename' },
+            { icon: 'ic-star',      label: this.selected.isPrimary ? 'Primary card'      : 'Set as primary', action: 'primary', disabled: this.selected.isPrimary },
+            { icon: 'ic-snowflake', label: this.selected.isFrozen  ? 'Unfreeze card'     : 'Freeze card',    action: 'freeze' },
+            { icon: 'ic-copy',      label: 'Copy card number',                                           action: 'copy' },
+            { icon: 'ic-trash',     label: 'Delete card',                                                action: 'delete', destructive: true, divider: true },
+          ],
+        };
+      },
+      runMenu(item) {
+        if (item.disabled) return;
+        this.menu.open = false;
+        const w = this.selected;
+        switch (item.action) {
+          case 'rename':
+            this.renameTarget = w.id;
+            this.renameValue = w.name;
+            this.renameOpen = true;
+            this.$nextTick(() => this.$refs.renameInput?.focus());
+            break;
+          case 'primary':
+            if (!w.isPrimary) {
+              this.wallets.forEach(x => x.isPrimary = (x.id === w.id));
+              this.wallets = [...this.wallets];
+              window.toast(w.name + ' set as primary');
+            }
+            break;
+          case 'freeze':
+            w.isFrozen = !w.isFrozen;
+            this.wallets = [...this.wallets];
+            window.toast(w.name + (w.isFrozen ? ' frozen ❄' : ' unfrozen'));
+            break;
+          case 'copy':
+            navigator.clipboard?.writeText(w.number);
+            window.toast('Card number copied');
+            break;
+          case 'delete':
+            window.confirmDialog('Delete ' + w.name + '? This cannot be undone.', { destructive: true, confirmText: 'Delete' }).then(ok => {
+              if (ok) {
+                this.wallets = this.wallets.filter(x => x.id !== w.id);
+                if (this.selectedId === w.id) this.selectedId = this.wallets[0]?.id;
+                window.toast('Card deleted');
+              }
+            });
+            break;
+        }
+      },
+
+      toggleFreeze() {
+        this.selected.isFrozen = false;
+        this.wallets = [...this.wallets];
+        window.toast(this.selected.name + ' unfrozen');
+      },
+
+      submitRename() {
+        const target = this.wallets.find(w => w.id === this.renameTarget);
+        if (target && this.renameValue.trim()) {
+          target.name = this.renameValue.trim();
+          this.wallets = [...this.wallets];
+          window.toast('Card renamed to "' + target.name + '"');
+        }
+        this.renameOpen = false;
+        this.renameTarget = null;
+        this.renameValue = '';
+      },
+
+      quickAction(mode) {
+        if (this.selected.isFrozen && mode !== 'receive') return;
+        this.quickActionMode = mode;
+        this.quickAmount = { value: null, recipient: '' };
+        this.quickActionOpen = true;
+      },
+
+      submitQuickAction() {
+        const amt = this.quickAmount.value;
+        if (!amt) return;
+        const w = this.selected;
+        switch (this.quickActionMode) {
+          case 'top-up': w.balance += amt; w.available += amt; window.toast('$' + amt.toFixed(2) + ' added to ' + w.name); break;
+          case 'send':   w.balance -= amt; w.available -= amt; window.toast('$' + amt.toFixed(2) + ' sent to ' + (this.quickAmount.recipient || 'recipient')); break;
+          case 'receive': w.balance += amt; w.available += amt; window.toast('$' + amt.toFixed(2) + ' received in ' + w.name); break;
+          case 'withdraw': w.balance -= amt; w.available -= amt; window.toast('$' + amt.toFixed(2) + ' withdrawn from ' + w.name); break;
+        }
+        this.wallets = [...this.wallets];
+        this.quickActionOpen = false;
+      },
+
+      swapTransfer() {
+        const tmp = this.transfer.from;
+        this.transfer.from = this.transfer.to;
+        this.transfer.to = tmp;
+      },
+
+      submitTransfer() {
+        const { from, to, amount, note } = this.transfer;
+        if (from === to || !amount) return;
+        const f = this.wallets.find(w => w.id === from);
+        const t = this.wallets.find(w => w.id === to);
+        if (f.balance < amount) {
+          window.toast('Insufficient balance on ' + f.name, { type: 'error' });
+          return;
+        }
+        f.balance -= amount; f.available -= amount;
+        t.balance += amount; t.available += amount;
+        this.wallets = [...this.wallets];
+        this.transferOpen = false;
+        this.transfer = { from: 'w001', to: 'w003', amount: null, note: '' };
+        window.toast('$' + amount.toFixed(2) + ' transferred ' + f.name + ' → ' + t.name, {
+          action: { label: 'Undo', onClick: () => {
+            f.balance += amount; f.available += amount;
+            t.balance -= amount; t.available -= amount;
+            this.wallets = [...this.wallets];
+            window.toast('Transfer reversed');
+          }}
+        });
+      },
+
+      submitAddCard() {
+        const id = 'w' + String(Date.now()).slice(-4);
+        const last4 = (this.newCard.number.replace(/\s/g,'').slice(-4)) || '0000';
+        const brand = this.newCard.type.split(' ')[0];
+        const gradients = [
+          'linear-gradient(135deg, #163300 0%, #2D5C0F 50%, #455C33 100%)',
+          'linear-gradient(135deg, #DF1C41 0%, #E55D2A 50%, #FFB200 100%)',
+          'linear-gradient(135deg, #1434CB 0%, #4B6CFF 50%, #9FE870 100%)',
+          'linear-gradient(135deg, #936DFF 0%, #B49AFF 50%, #F4F0FF 100%)',
+          'linear-gradient(135deg, #0A0A0A 0%, #404040 50%, #737373 100%)',
+        ];
+        const newWallet = {
+          id, name: this.newCard.name, type: this.newCard.type, brand,
+          number: this.newCard.number, last4, holder: this.newCard.holder.toUpperCase(), expiry: this.newCard.expiry,
+          balance: 0, pending: 0, available: 0,
+          gradient: gradients[this.wallets.length % gradients.length],
+          currency: 'USD', isPrimary: this.newCard.setPrimary, isFrozen: false,
+          monthlySpend: 0, monthlyIn: 0,
+        };
+        if (newWallet.isPrimary) this.wallets.forEach(w => w.isPrimary = false);
+        this.wallets = [...this.wallets, newWallet];
+        this.selectedId = id;
+        this.addCardOpen = false;
+        this.newCard = { name: '', number: '', expiry: '', cvv: '', holder: '', type: 'Visa Debit', setPrimary: false };
+        window.toast(newWallet.name + ' added successfully');
+      },
+    }
+  }
+</script>

@@ -1,0 +1,595 @@
+<div x-data="dashboardPage()" x-init="init()" class="absolute inset-0">
+
+  <!-- ===== Top Header ===== -->
+  <header class="absolute top-0 right-0 w-[1170px] bg-white border-b border-g-100 flex items-center justify-between px-4 py-6 z-10">
+    <button @click="window.openCommand()" class="bg-white rounded-full shadow-card flex items-center gap-2 px-3 py-2 w-[238px] hover:shadow-md transition-shadow focus:outline-none focus:ring-2 focus:ring-p-300">
+      <span class="ic ic-16 ic-search text-g-400"></span>
+      <span class="flex-1 text-left text-[14px] font-medium leading-[1.5] tracking-wide2 text-g-400">Search anything…</span>
+      <kbd class="text-[11px] font-medium bg-g-50 border border-g-100 rounded px-1.5 py-0.5 text-g-400">⌘K</kbd>
+    </button>
+    <div class="flex items-center gap-4">
+      <!-- Bell with dropdown -->
+      <div class="relative" x-data="{ open: false }" @click.outside="open = false">
+        <button @click="open = !open" class="relative bg-white rounded-full shadow-card p-2.5 flex items-center justify-center hover:bg-g-25 transition-colors focus:outline-none focus:ring-2 focus:ring-p-300">
+          <span class="ic ic-20 ic-bell text-g-900"></span>
+          <span class="absolute top-[11px] right-[11px] w-1.5 h-1.5 rounded-full bg-err-100 border border-white"></span>
+        </button>
+        <div x-show="open" x-cloak x-transition.opacity
+             class="absolute right-0 top-full mt-2 w-[340px] bg-white border border-g-100 rounded-xl shadow-pop overflow-hidden z-20">
+          <div class="px-4 py-3 border-b border-g-100 flex items-center justify-between">
+            <h3 class="text-[14px] font-semibold text-g-900">Notifications</h3>
+            <button @click="window.toast('All marked as read'); open = false" class="text-[12px] text-s-300 font-medium hover:underline">Mark all read</button>
+          </div>
+          <div class="max-h-[320px] overflow-y-auto">
+            <template x-for="n in notifications" :key="n.id">
+              <button @click="window.toast(n.title); open = false" class="w-full text-left px-4 py-3 flex items-start gap-3 hover:bg-g-25 transition-colors border-b border-g-100 last:border-0">
+                <div class="w-9 h-9 rounded-full flex items-center justify-center shrink-0" :style="'background:' + n.color">
+                  <span class="text-[14px]" x-text="n.icon"></span>
+                </div>
+                <div class="flex-1 min-w-0">
+                  <p class="text-[13px] font-medium text-g-900" x-text="n.title"></p>
+                  <p class="text-[12px] text-g-400 mt-0.5" x-text="n.time"></p>
+                </div>
+                <span x-show="n.unread" class="w-2 h-2 rounded-full bg-s-300 mt-2 shrink-0"></span>
+              </button>
+            </template>
+          </div>
+          <div class="px-4 py-2 border-t border-g-100 bg-g-25">
+            <button class="w-full text-[12px] font-medium text-s-300 py-1 hover:underline">View all notifications</button>
+          </div>
+        </div>
+      </div>
+      <div class="vdiv"></div>
+      <button @click="window.openReferral()" class="flex items-center gap-2 h-10 px-3 pr-4 rounded-full text-white text-[14px] font-medium tracking-wide2 border border-g-500 shadow-card hover:brightness-110 transition focus:outline-none focus:ring-2 focus:ring-p-300"
+              style="background-image: linear-gradient(180deg, rgba(255,255,255,0.24) 0%, rgba(255,255,255,0) 100%), linear-gradient(90deg, #163300 0%, #163300 100%);">
+        <span class="ic ic-20 ic-gift text-white"></span>
+        Earn $90
+      </button>
+    </div>
+  </header>
+
+  <!-- ===== Accounts Section ===== -->
+  <section class="absolute left-0 top-[88px] w-[1170px] border-b border-g-100 flex items-center gap-4 p-4">
+    <div class="flex-1 flex flex-col gap-4 min-w-0">
+      <h1 class="text-[24px] font-semibold leading-[1.3] tracking-tight2 text-g-900">Accounts</h1>
+      <div class="flex items-center gap-4">
+        <!-- Card pill with switcher dropdown -->
+        <div class="relative" @click.outside="accountPillOpen = false">
+          <button @click="accountPillOpen = !accountPillOpen" class="bg-white rounded-full shadow-card flex items-center gap-2 px-3.5 py-2.5 hover:bg-g-25 transition-colors focus:outline-none focus:ring-2 focus:ring-p-300">
+            <div class="relative w-[31px] h-5 bg-[#1434CB] rounded overflow-hidden">
+              <div class="absolute top-[10px] left-1/2 -translate-x-1/2 w-[35px] h-[3px]">
+                <img src="assets/visa-bg.png" alt="" class="w-full h-full object-cover" />
+              </div>
+              <img src="assets/visa.svg" alt="visa" class="absolute top-[3.75px] left-[3.5px] w-[9.5px] h-[3px]" />
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="acct-dots"></span>
+              <span class="text-[12px] font-medium leading-[1.5] tracking-wide1 text-g-900" x-text="activeCard.last4"></span>
+            </div>
+            <span class="ic ic-16 ic-chevron-down text-g-900 transition-transform" :class="accountPillOpen ? 'rotate-180' : ''"></span>
+          </button>
+          <!-- Dropdown -->
+          <div x-show="accountPillOpen" x-cloak x-transition.opacity
+               class="absolute top-full mt-2 left-0 bg-white border border-g-100 rounded-xl shadow-pop py-2 z-20 min-w-[260px]">
+            <div class="px-3 py-1.5 text-[10px] uppercase tracking-wider text-g-400 font-semibold">Switch card</div>
+            <template x-for="c in cards" :key="c.id">
+              <button @click="activeCardId = c.id; accountPillOpen = false; window.toast('Switched to ' + c.name, { type: 'info', duration: 1200 })"
+                      class="w-full flex items-center gap-3 px-3 py-2 hover:bg-g-25 transition-colors text-left">
+                <div class="w-9 h-6 rounded shrink-0" :style="'background: ' + c.gradient"></div>
+                <div class="flex-1 min-w-0">
+                  <div class="text-[13px] font-semibold text-g-900 truncate" x-text="c.name"></div>
+                  <div class="text-[11px] text-g-400" x-text="c.type + ' · •••• ' + c.last4"></div>
+                </div>
+                <span x-show="activeCardId === c.id" class="ic ic-16 ic-check" style="color: #287F6E"></span>
+              </button>
+            </template>
+            <div class="border-t border-g-100 my-2"></div>
+            <a href="#/wallet" @click="accountPillOpen = false" class="w-full flex items-center gap-3 px-3 py-2 hover:bg-g-25 transition-colors">
+              <span class="w-9 h-6 rounded bg-g-50 flex items-center justify-center"><span class="ic ic-16 ic-plus text-g-900"></span></span>
+              <span class="text-[13px] font-medium text-g-900">Manage all cards</span>
+            </a>
+          </div>
+        </div>
+        <button @click="window.openNewPayment()" class="bg-white rounded-full shadow-card w-10 h-10 flex items-center justify-center hover:bg-g-25 transition-colors focus:outline-none focus:ring-2 focus:ring-p-300" title="Send payment">
+          <span class="ic ic-16 ic-plus text-g-900"></span>
+        </button>
+        <div class="vdiv"></div>
+        <button @click="openCardMenu($event)" class="bg-white rounded-full shadow-card w-10 h-10 flex items-center justify-center hover:bg-g-25 transition-colors focus:outline-none focus:ring-2 focus:ring-p-300" title="More options">
+          <span class="ic ic-16 ic-dots-v text-g-900"></span>
+        </button>
+      </div>
+    </div>
+    <div class="flex items-center gap-2">
+      <button @click="window.openManageBalance()" class="bg-white border border-g-100 rounded-full shadow-card h-12 px-4 flex items-center gap-2 hover:bg-g-25 transition-colors focus:outline-none focus:ring-2 focus:ring-p-300">
+        <span class="ic ic-20 ic-settings text-g-900"></span>
+        <span class="text-[16px] font-semibold leading-[1.5] tracking-wide3 text-g-900">Manage Balance</span>
+      </button>
+      <button @click="window.openNewPayment()" class="bg-p-300 rounded-full h-12 px-4 flex items-center gap-2 hover:bg-p-200 transition-colors focus:outline-none focus:ring-2 focus:ring-s-300">
+        <span class="ic ic-20 ic-plus" style="color:#163300"></span>
+        <span class="text-[16px] font-semibold leading-[1.5] tracking-wide3 text-s-300">New Payment</span>
+      </button>
+    </div>
+  </section>
+
+  <!-- ===== Stats Row (clickable navigate — use <div> outer because <button> can't nest <button>) ===== -->
+  <section class="absolute left-4 top-[223px] w-[1138px] flex items-start gap-4">
+    <template x-for="(stat, i) in stats" :key="stat.key">
+      <div @click="navigateStat(stat.key)" role="button" tabindex="0" @keydown.enter="navigateStat(stat.key)"
+           class="flex-1 bg-white rounded-xl shadow-card p-4 flex items-center overflow-hidden cursor-pointer hover:shadow-md hover:-translate-y-0.5 transition-all focus:outline-none focus:ring-2 focus:ring-p-300 group">
+        <div class="flex-1 flex flex-col gap-2 min-w-0">
+          <div class="flex items-center gap-3 w-full">
+            <span class="flex-1 text-[14px] font-semibold leading-[1.5] tracking-wide2 text-g-900" x-text="stat.label"></span>
+            <button @click.stop="openStatMenu($event, stat)" class="w-5 h-5 flex items-center justify-center rounded hover:bg-g-50 transition-colors" title="More options">
+              <span class="ic ic-16 ic-dots-v text-g-900"></span>
+            </button>
+          </div>
+          <div class="flex items-center gap-2 w-full">
+            <span class="text-[24px] font-semibold leading-[1.3] tracking-tight2 text-g-900 whitespace-nowrap" x-text="stat.value"></span>
+            <span class="h-6 rounded-md px-1 flex items-center justify-center text-[12px] font-semibold leading-[1.5] tracking-wide1 border"
+                  :class="stat.positive ? 'bg-suc-0 border-[rgba(64,196,170,0.2)] text-suc-200' : 'bg-err-0 border-[rgba(223,28,65,0.1)] text-err-200'"
+                  x-text="'+' + stat.change"></span>
+          </div>
+        </div>
+      </div>
+    </template>
+  </section>
+
+  <!-- ===== Cash Flow Widget ===== -->
+  <section class="absolute left-4 top-[331px] w-[753px] h-[398px] bg-white rounded-xl shadow-card flex flex-col overflow-hidden">
+    <div class="flex items-center gap-4 p-4 w-full">
+      <div class="flex-1 flex flex-col gap-2 min-w-0">
+        <span class="text-[14px] font-semibold leading-[1.5] tracking-wide2 text-g-900">Cash Flow</span>
+        <span class="text-[24px] font-semibold leading-[1.3] tracking-tight2 text-g-900 whitespace-nowrap" x-text="'$' + cashFlowTotal.toLocaleString('en-US', { minimumFractionDigits: 2 })"></span>
+      </div>
+      <!-- Custom date + range -->
+      <div class="bg-g-50 border border-g-100 rounded-lg flex items-center justify-center overflow-hidden">
+        <button @click="window.toast('Custom date picker coming soon', { type: 'info' })" class="border-r border-g-100 flex items-center justify-center gap-2 px-3 py-2 hover:bg-white transition-colors">
+          <span class="ic ic-16 ic-plus text-g-900"></span>
+          <span class="text-[12px] font-medium leading-[1.5] tracking-wide1 text-g-900 whitespace-nowrap">Custom Date</span>
+        </button>
+        <!-- Range dropdown -->
+        <div class="relative" x-data="{ open: false }" @click.outside="open = false">
+          <button @click="open = !open" class="bg-white flex items-center justify-center gap-2 pl-3 pr-2 py-2 hover:bg-g-25 transition-colors">
+            <span class="text-[12px] font-semibold leading-[1.5] tracking-wide1 text-g-900 whitespace-nowrap" x-text="cashFlowRange"></span>
+            <span class="ic ic-16 ic-chevron-down text-g-900 transition-transform" :class="open ? 'rotate-180' : ''"></span>
+          </button>
+          <div x-show="open" x-cloak x-transition.opacity class="absolute top-full mt-2 right-0 bg-white border border-g-100 rounded-lg shadow-pop py-1 z-10 min-w-[100px]">
+            <template x-for="r in ['1M','3M','6M','1Y','ALL']" :key="r">
+              <button @click="cashFlowRange = r; open = false" class="w-full text-left px-3 py-1.5 text-[12px] hover:bg-g-25" :class="cashFlowRange === r ? 'font-semibold text-g-900 bg-g-25' : 'text-g-400'" x-text="r"></button>
+            </template>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Series + chart-type filter row -->
+    <div class="border-t border-b border-g-100 flex items-center justify-between px-4 py-3">
+      <div class="bg-g-50 border border-g-100 rounded-lg flex items-center overflow-hidden">
+        <template x-for="(s, i) in ['Income','Expense','Savings']" :key="s">
+          <button @click="cashFlowSeries = s"
+                  class="px-4 py-2 flex items-center justify-center transition-colors"
+                  :class="cashFlowSeries === s ? 'bg-white' : 'hover:bg-white/60'"
+                  :style="i < 2 ? 'border-right: 1px solid #E5E5E5' : ''">
+            <span class="text-[12px] leading-[1.5] tracking-wide1 text-g-900 whitespace-nowrap" :class="cashFlowSeries === s ? 'font-semibold' : 'font-medium'" x-text="s"></span>
+          </button>
+        </template>
+      </div>
+    </div>
+
+    <div class="flex flex-col p-4 w-full">
+      <div class="h-[216px] relative w-full">
+        <div class="absolute bottom-[21px] left-0 flex flex-col gap-9 items-end justify-center text-[14px] font-medium leading-[1.5] tracking-wide2 text-g-400 whitespace-nowrap">
+          <span>$15K</span><span>$10K</span><span>$5K</span><span>0</span>
+        </div>
+        <div class="absolute left-[50px] top-0 w-[671px] h-[195px] overflow-hidden">
+          <div class="absolute bottom-0 left-0 w-full flex flex-col gap-9">
+            <div class="h-[21px] flex items-center"><div class="grid-line"></div></div>
+            <div class="h-[21px] flex items-center"><div class="grid-line"></div></div>
+            <div class="h-[21px] flex items-center"><div class="grid-line"></div></div>
+            <div class="h-[21px] flex items-center"><div class="grid-line"></div></div>
+          </div>
+          <div class="absolute left-3 top-[21px] w-[647px] h-[160px] flex items-end gap-2">
+            <template x-for="(bar, i) in cashFlowBars" :key="i">
+              <div class="flex-1 flex flex-col items-stretch min-w-0 cursor-pointer"
+                   @mouseenter="hoveredBar = i" @mouseleave="hoveredBar = null"
+                   @click="activeMonth = i">
+                <!-- Bar: bg changes for active / hovered / default -->
+                <div class="rounded-lg transition-all"
+                     :class="i === displayMonth ? 'bg-p-300' : (i === activeMonth ? 'bg-p-200' : 'bg-g-50')"
+                     :style="'height: ' + bar.height + 'px'"></div>
+              </div>
+            </template>
+          </div>
+          <!-- Avg indicator (z-10) — Y position follows TOP of displayMonth's bar. Rendered BEFORE tooltip so dashed line sits behind it. -->
+          <div class="absolute left-0 w-full flex items-center transition-all duration-200 ease-out pointer-events-none z-10"
+               :style="'top: ' + avgTopPosition + 'px'">
+            <div class="flex items-stretch">
+              <div class="bg-s-200 flex items-center pl-1 pr-0.5 py-px rounded-l">
+                <span class="text-[14px] leading-[1.5] tracking-wide2 text-white whitespace-nowrap">Avg</span>
+              </div>
+              <div class="w-0 h-0 border-y-[10px] border-y-transparent border-l-[8px] border-l-s-200"></div>
+            </div>
+            <div class="avg-line"></div>
+          </div>
+          <!-- SINGLE tooltip (z-20) — follows hover, returns to active month when not hovering. Above avg line. -->
+          <div class="absolute top-[27px] w-[140px] bg-white border border-g-100 rounded-lg shadow-pop p-2 flex flex-col items-center pointer-events-none transition-all duration-150 z-20"
+               :style="'left: ' + tooltipLeft(displayMonth) + 'px'">
+            <div class="flex flex-col gap-2 w-full">
+              <span class="text-[14px] font-medium leading-[1.5] tracking-wide2 text-g-400" x-text="cashFlowBars[displayMonth].label + ', 2024'"></span>
+              <div class="flex items-center gap-2 w-full text-[14px] tracking-wide2 text-g-900">
+                <span class="flex-1 font-medium" x-text="cashFlowSeries"></span>
+                <span class="font-semibold whitespace-nowrap" x-text="'$' + cashFlowBars[displayMonth].value.toLocaleString()"></span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="absolute bottom-0 left-[50px] w-[671px] flex items-center px-6 gap-2">
+          <div class="flex-1 flex items-center">
+            <span class="text-[14px] font-medium leading-[1.5] tracking-wide2 text-g-400">Jan</span>
+          </div>
+          <div class="flex-1 flex items-center justify-end">
+            <span class="text-[14px] font-medium leading-[1.5] tracking-wide2 text-g-400">Dec</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== Bill & Payment Widget ===== -->
+  <section class="absolute left-[785px] top-[331px] w-[369px] h-[398px] bg-white rounded-xl shadow-card flex flex-col gap-3 overflow-hidden p-4">
+    <div class="flex items-center gap-4 h-10 w-full">
+      <span class="flex-1 text-[14px] font-semibold leading-[1.5] tracking-wide2 text-g-900">Bill & Payment</span>
+      <button @click="window.openNewPayment()" class="bg-white rounded-full shadow-card h-10 w-10 flex items-center justify-center hover:bg-g-25 transition-colors focus:outline-none focus:ring-2 focus:ring-p-300" title="Add bill">
+        <span class="ic ic-16 ic-plus text-g-900"></span>
+      </button>
+    </div>
+    <template x-for="bill in bills" :key="bill.id">
+      <button @click="openBill(bill)" class="bg-white rounded-lg shadow-card flex flex-col overflow-hidden w-full hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer text-left focus:outline-none focus:ring-2 focus:ring-p-300">
+        <div class="flex items-center gap-3 p-4 w-full">
+          <div class="rounded-lg p-2 flex items-center justify-center border" :style="'background:' + bill.bg + '; border-color:' + bill.border">
+            <img :src="bill.icon" alt="" class="w-5 h-5" />
+          </div>
+          <div class="flex-1 flex flex-col gap-1 min-w-0">
+            <span class="text-[14px] font-semibold leading-[1.5] tracking-wide2 text-g-900" x-text="bill.name"></span>
+            <span class="text-[12px] font-medium leading-[1.5] tracking-wide1 text-g-400" x-text="bill.date"></span>
+          </div>
+          <span class="ic ic-16 ic-chevron-right text-g-900"></span>
+        </div>
+        <div class="bg-g-25 border-t border-g-100 flex items-center gap-1 px-4 py-2 w-full">
+          <span class="flex-1 text-[14px] font-semibold leading-[1.5] tracking-wide2 text-g-900" x-text="'$' + bill.amount.toFixed(2)"></span>
+          <span class="bg-por-0 border border-por-25 rounded-full h-6 px-2 flex items-center justify-center text-[12px] font-semibold leading-[1.5] tracking-wide1 text-por-100" x-text="bill.status"></span>
+        </div>
+      </button>
+    </template>
+    <a href="#/invoices" class="bg-white border border-g-100 rounded-full shadow-card h-12 w-full flex items-center justify-center gap-2 pl-4 pr-5 py-3 hover:bg-g-25 transition-colors focus:outline-none focus:ring-2 focus:ring-p-300">
+      <span class="text-[16px] font-semibold leading-[1.5] tracking-wide3 text-g-900">View All</span>
+    </a>
+  </section>
+
+  <!-- ===== Monthly Expense Widget ===== -->
+  <section class="absolute left-4 top-[745px] w-[465px] h-[263px] bg-white rounded-xl shadow-card flex flex-col gap-4 overflow-hidden p-4">
+    <div class="flex items-center gap-3 w-full">
+      <span class="flex-1 text-[14px] font-semibold leading-[1.5] tracking-wide2 text-g-900">Monthly Expense</span>
+      <!-- Period dropdown -->
+      <div class="relative" x-data="{ open: false }" @click.outside="open = false">
+        <button @click="open = !open" class="bg-white border border-g-100 rounded-lg flex items-center gap-2 px-3 py-2 hover:bg-g-25 transition-colors focus:outline-none focus:ring-2 focus:ring-p-300">
+          <span class="text-[12px] font-semibold leading-[1.5] tracking-wide1 text-g-900 whitespace-nowrap" x-text="expensePeriod"></span>
+          <span class="ic ic-16 ic-chevron-down text-g-900 transition-transform" :class="open ? 'rotate-180' : ''"></span>
+        </button>
+        <div x-show="open" x-cloak x-transition.opacity class="absolute top-full mt-2 right-0 bg-white border border-g-100 rounded-lg shadow-pop py-1 z-10 min-w-[120px]">
+          <template x-for="p in ['Weekly','Monthly','Quarterly','Yearly']" :key="p">
+            <button @click="expensePeriod = p; open = false" class="w-full text-left px-3 py-1.5 text-[12px] hover:bg-g-25" :class="expensePeriod === p ? 'font-semibold text-g-900 bg-g-25' : 'text-g-400'" x-text="p"></button>
+          </template>
+        </div>
+      </div>
+    </div>
+    <div class="flex items-center justify-between w-full">
+      <div class="w-[180px] h-[180px] relative shrink-0">
+        <img src="assets/data-plot.svg" alt="" class="w-full h-full" />
+      </div>
+      <div class="w-[217px] flex flex-col">
+        <template x-for="(cat, i) in expenseCategories" :key="cat.name">
+          <button @click="window.toast('Filter by ' + cat.name + ' coming soon', { type: 'info' })"
+                  class="flex items-center gap-4 py-3 w-full hover:bg-g-25 -mx-2 px-2 rounded transition-colors"
+                  :class="i < expenseCategories.length - 1 ? 'border-b border-g-100' : ''">
+            <span class="w-2.5 h-2.5 rounded-full shrink-0" :style="'background:' + cat.color"></span>
+            <span class="flex-1 text-[14px] font-semibold leading-[1.5] tracking-wide2 text-g-900 text-left" x-text="cat.name"></span>
+            <span class="text-[14px] font-semibold leading-[1.5] tracking-wide2 text-g-900 whitespace-nowrap" x-text="cat.pct + '%'"></span>
+          </button>
+        </template>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== Transactions Mini Table ===== -->
+  <section class="absolute left-[497px] top-[745px] w-[657px] h-[263px] bg-white rounded-xl shadow-card flex flex-col overflow-hidden">
+    <div class="h-16 border-b border-g-100 flex items-center justify-between p-4 w-full">
+      <div class="flex items-center gap-3">
+        <span class="text-[14px] font-semibold leading-[1.5] tracking-wide2 text-g-900">Transactions</span>
+        <a href="#/transactions" class="text-[12px] font-medium text-s-300 hover:underline">View all →</a>
+      </div>
+      <div class="flex items-center gap-2">
+        <button @click="window.openCommand()" class="bg-white rounded-full shadow-card h-8 w-[265px] flex items-center gap-1.5 pl-3 pr-4 overflow-hidden hover:shadow-md transition-shadow focus:outline-none focus:ring-2 focus:ring-p-300">
+          <span class="ic ic-16 ic-search text-g-400"></span>
+          <span class="flex-1 text-left text-[12px] font-medium leading-[1.5] tracking-wide1 text-g-400">Search transaction...</span>
+        </button>
+        <a href="#/transactions" class="bg-white rounded-full shadow-card w-8 h-8 flex items-center justify-center hover:bg-g-25 transition-colors" title="Open filters">
+          <span class="ic ic-16 ic-filter text-g-900"></span>
+        </a>
+      </div>
+    </div>
+    <div class="flex items-start w-full">
+      <!-- Name column -->
+      <div class="w-[200px] flex flex-col">
+        <div class="bg-g-25 border-b border-r border-g-100 h-10 flex items-center gap-3 px-4">
+          <button @click="toggleAllMini()" class="w-4 h-4 rounded-sm shadow-cb flex items-center justify-center transition-colors"
+                  :class="allMiniSelected ? 'bg-s-300' : 'bg-white'">
+            <span x-show="allMiniSelected" class="text-white text-[10px] leading-none">✓</span>
+          </button>
+          <span class="text-[12px] font-medium leading-[1.5] tracking-wide1 text-g-400 whitespace-nowrap">Name</span>
+        </div>
+        <template x-for="t in miniTransactions" :key="t.id">
+          <button @click="openTransaction(t)" class="border-b border-r border-g-100 h-14 flex items-center gap-3 px-4 hover:bg-g-25 cursor-pointer transition-colors text-left w-full">
+            <div class="w-4 h-4 rounded-sm shadow-cb flex items-center justify-center transition-colors shrink-0" @click.stop="toggleMiniRow(t.id)"
+                 :class="selectedMini.includes(t.id) ? 'bg-s-300' : 'bg-white'">
+              <span x-show="selectedMini.includes(t.id)" class="text-white text-[10px] leading-none">✓</span>
+            </div>
+            <template x-if="t.avatar"><img :src="t.avatar" alt="" class="w-6 h-6 rounded-full object-cover" /></template>
+            <template x-if="t.brandIcon">
+              <div class="w-6 h-6 rounded-full overflow-hidden flex items-center justify-center" :style="'background:' + t.brandBg">
+                <img :src="t.brandIcon" alt="" class="w-[16.5px] h-[16.5px]" />
+              </div>
+            </template>
+            <span class="text-[14px] font-medium leading-[1.5] tracking-wide2 text-g-900 whitespace-nowrap" x-text="t.name"></span>
+          </button>
+        </template>
+      </div>
+      <!-- Type / Amount / Date / Action columns -->
+      <div class="flex-1 flex">
+        <div class="w-[105px] flex flex-col">
+          <div class="bg-g-25 border-b border-r border-g-100 h-10 flex items-center px-4"><span class="text-[12px] font-medium text-g-400 whitespace-nowrap">Type</span></div>
+          <template x-for="t in miniTransactions" :key="t.id">
+            <div class="border-b border-r border-g-100 h-14 flex items-center px-4 cursor-pointer hover:bg-g-25 transition-colors" @click="openTransaction(t)">
+              <span class="text-[14px] font-medium text-g-900 whitespace-nowrap" x-text="t.type"></span>
+            </div>
+          </template>
+        </div>
+        <div class="w-[104px] flex flex-col">
+          <div class="bg-g-25 border-b border-r border-g-100 h-10 flex items-center px-4"><span class="text-[12px] font-medium text-g-400 whitespace-nowrap">Amount</span></div>
+          <template x-for="t in miniTransactions" :key="t.id">
+            <div class="border-b border-r border-g-100 h-14 flex items-center px-4 cursor-pointer hover:bg-g-25 transition-colors" @click="openTransaction(t)">
+              <span class="text-[14px] font-semibold whitespace-nowrap" :class="t.amount >= 0 ? 'text-suc-200' : 'text-g-900'" x-text="formatAmount(t.amount)"></span>
+            </div>
+          </template>
+        </div>
+        <div class="flex-1 flex flex-col">
+          <div class="bg-g-25 border-b border-r border-g-100 h-10 flex items-center px-4"><span class="text-[12px] font-medium text-g-400 whitespace-nowrap">Date</span></div>
+          <template x-for="t in miniTransactions" :key="t.id">
+            <div class="border-b border-r border-g-100 h-14 flex items-center px-4 cursor-pointer hover:bg-g-25 transition-colors" @click="openTransaction(t)">
+              <span class="text-[14px] font-medium text-g-900 whitespace-nowrap" x-text="formatDate(t.date)"></span>
+            </div>
+          </template>
+        </div>
+        <div class="w-12 flex flex-col">
+          <div class="bg-g-25 border-b border-g-100 h-10 w-full"></div>
+          <template x-for="t in miniTransactions" :key="t.id">
+            <div class="border-b border-g-100 h-14 flex items-center justify-center px-4">
+              <button @click="openRowMenu($event, t)" class="w-7 h-7 rounded-full flex items-center justify-center hover:bg-g-100 transition-colors">
+                <span class="ic ic-16 ic-dots-v text-g-900"></span>
+              </button>
+            </div>
+          </template>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== Context Menu (popup) ===== -->
+  <div x-show="menu.open" x-cloak @click.outside="menu.open = false" :style="`top: ${menu.y}px; left: ${menu.x}px;`"
+       class="fixed bg-white border border-g-100 popup-menu shadow-pop z-50">
+    <template x-for="item in menu.items" :key="item.label">
+      <div>
+        <div x-show="item.divider" class="popup-menu-divider"></div>
+        <button @click="runMenu(item)" class="popup-menu-item" :class="{ 'destructive': item.destructive }">
+          <span class="ic-wrap"><span class="ic ic-16" :class="item.icon" :style="`color: ${item.destructive ? '#95122B' : '#0A0A0A'}`"></span></span>
+          <span x-text="item.label"></span>
+        </button>
+      </div>
+    </template>
+  </div>
+
+  <!-- ===== Transaction Detail Drawer (mini) ===== -->
+  <div x-show="detailTxn" x-cloak x-transition.opacity @keydown.escape.window="detailTxn = null"
+       class="fixed inset-0 bg-black/40 z-40 flex justify-end" @click.self="detailTxn = null">
+    <div x-show="detailTxn" x-cloak
+         x-transition:enter="transition ease-out duration-200" x-transition:enter-start="translate-x-full" x-transition:enter-end="translate-x-0"
+         x-transition:leave="transition ease-in duration-150" x-transition:leave-start="translate-x-0" x-transition:leave-end="translate-x-full"
+         class="w-[400px] h-full bg-white shadow-2xl flex flex-col">
+      <template x-if="detailTxn">
+        <div class="flex flex-col h-full">
+          <div class="h-16 px-5 border-b border-g-100 flex items-center gap-3">
+            <h2 class="flex-1 text-[16px] font-semibold text-g-900">Transaction</h2>
+            <button @click="detailTxn = null" class="w-8 h-8 rounded-full hover:bg-g-50 flex items-center justify-center text-g-400">✕</button>
+          </div>
+          <div class="flex-1 p-5 flex flex-col gap-4">
+            <div class="flex flex-col items-center gap-2 py-4">
+              <template x-if="detailTxn.avatar"><img :src="detailTxn.avatar" class="w-16 h-16 rounded-full object-cover"/></template>
+              <template x-if="detailTxn.brandIcon"><div class="w-16 h-16 rounded-full flex items-center justify-center" :style="'background:' + detailTxn.brandBg"><img :src="detailTxn.brandIcon" class="w-8 h-8"/></div></template>
+              <span class="text-[14px] text-g-400" x-text="detailTxn.name"></span>
+              <span class="text-[28px] font-semibold tracking-tight2" :class="detailTxn.amount >= 0 ? 'text-suc-200' : 'text-g-900'" x-text="formatAmount(detailTxn.amount)"></span>
+            </div>
+            <a href="#/transactions" @click="detailTxn = null" class="text-center text-[13px] font-semibold text-s-300 hover:underline">View full details in Transactions →</a>
+          </div>
+        </div>
+      </template>
+    </div>
+  </div>
+</div>
+
+<script>
+  function dashboardPage() {
+    return {
+      // State
+      accountPillOpen: false,
+      activeCardId: 'w001',
+      cashFlowSeries: 'Income',
+      cashFlowRange: '1Y',
+      activeMonth: 4, // Apr (index 4 = 5th month, but actually pos 4 = May. Apr highlighted in original)
+      hoveredBar: null,
+      expensePeriod: 'Monthly',
+      selectedMini: [],
+      detailTxn: null,
+      menu: { open: false, x: 0, y: 0, items: [], target: null },
+
+      // Cash Flow data — heights match original Figma design
+      cashFlowBars: [
+        { label: 'Jan', value: 7400, height: 79 },
+        { label: 'Feb', value: 10500, height: 112 },
+        { label: 'Mar', value: 7100, height: 76 },
+        { label: 'Apr', value: 14056, height: 154 }, // highlighted
+        { label: 'May', value: 9600, height: 103 },
+        { label: 'Jun', value: 12100, height: 129 },
+        { label: 'Jul', value: 8600, height: 92 },
+        { label: 'Aug', value: 12700, height: 135 },
+        { label: 'Sep', value: 12300, height: 131 },
+        { label: 'Oct', value: 14400, height: 154 },
+        { label: 'Nov', value: 8100, height: 86 },
+        { label: 'Dec', value: 9400, height: 100 },
+      ],
+
+      stats: [
+        { key: 'balance',  label: 'Total Balance',   value: '$58,145.07', change: '2.5%', positive: true },
+        { key: 'income',   label: 'Monthly Income',  value: '$18,500.99', change: '2.5%', positive: true },
+        { key: 'expense',  label: 'Monthly Expense', value: '$11,200.56', change: '8%',   positive: false },
+        { key: 'savings',  label: 'Monthly Savings', value: '$6,765.12',  change: '8.5%', positive: true },
+      ],
+
+      cards: [],
+      bills: [
+        { id:'b1', name:'Netflix Subscription', date:'Aug 15, 2024', amount: 25.00, status:'Scheduled', icon:'assets/netflix.svg', bg:'rgba(223,13,18,0.1)', border:'rgba(223,13,18,0.2)' },
+        { id:'b2', name:'Spotify Subscription', date:'Aug 15, 2024', amount: 25.00, status:'Scheduled', icon:'assets/spotify.svg', bg:'rgba(0,218,90,0.1)', border:'rgba(0,218,90,0.2)' },
+      ],
+
+      expenseCategories: [
+        { name: 'Daily Needs', pct: 60, color: '#9FE870' },
+        { name: 'Savings',     pct: 20, color: '#163300' },
+        { name: 'Shopping',    pct: 5,  color: '#A2AD99' },
+        { name: 'Others',      pct: 15, color: '#738566' },
+      ],
+
+      miniTransactions: [],
+
+      notifications: [
+        { id:1, title:'Salary received: $4,200.00',          time:'2 hours ago', icon:'💰', color:'#EFFEFA', unread:true },
+        { id:2, title:'Netflix payment scheduled for Aug 15', time:'5 hours ago', icon:'📺', color:'#FEEFF2', unread:true },
+        { id:3, title:'Guy Hawkins sent you $250.00',         time:'1 day ago',   icon:'💸', color:'#F4F0FF', unread:true },
+        { id:4, title:'Card ending 8744 was used',             time:'2 days ago',  icon:'💳', color:'#F5F5F5', unread:false },
+      ],
+
+      init() {
+        this.cards = window.MonefyData?.wallets || [];
+        this.miniTransactions = (window.MonefyData?.transactions || []).slice(0, 3);
+      },
+
+      get activeCard() {
+        return this.cards.find(c => c.id === this.activeCardId) || this.cards[0] || { last4: '8744', name: 'Main Account', type: 'Visa Debit' };
+      },
+      get cashFlowTotal() {
+        return this.cashFlowBars.reduce((s, b) => s + b.value, 0) * (this.cashFlowSeries === 'Income' ? 1 : this.cashFlowSeries === 'Expense' ? 0.62 : 0.32);
+      },
+      // Single source of truth for which month tooltip shows: hover takes priority, falls back to active
+      get displayMonth() {
+        return this.hoveredBar !== null ? this.hoveredBar : this.activeMonth;
+      },
+      // Vertical position of Avg indicator — follows TOP of displayMonth's bar
+      // Chart canvas: 195px tall. Bars container: top-21 h-160. Bars grow from bottom.
+      // A bar with height H has its top at y = (21 + 160 - H) = (181 - H).
+      // Avg tag ~20px tall, vertical-center on bar top: top = (181 - H) - 10.
+      get avgTopPosition() {
+        const H = this.cashFlowBars[this.displayMonth].height;
+        return Math.max(0, 181 - H - 10);
+      },
+      // Compute tooltip horizontal position for a given month index
+      // Chart canvas: 647px wide, 12 bars + 11 gaps of 8px = 88px gaps, so each bar = (647-88)/12 ≈ 46.58px
+      // Tooltip width 140px, center on bar
+      tooltipLeft(i) {
+        const chartWidth = 647;
+        const gap = 8;
+        const barWidth = (chartWidth - gap * 11) / 12;
+        const barCenter = 12 + i * (barWidth + gap) + barWidth / 2;
+        // Clamp so tooltip doesn't overflow chart edges
+        return Math.max(0, Math.min(barCenter - 70, chartWidth - 140));
+      },
+      get allMiniSelected() {
+        return this.miniTransactions.length > 0 && this.miniTransactions.every(t => this.selectedMini.includes(t.id));
+      },
+
+      navigateStat(key) {
+        const map = { balance: '#/wallet', income: '#/transactions', expense: '#/transactions', savings: '#/reports' };
+        window.toast('Navigating to ' + (map[key] || '#/').replace('#/', '') + '…', { type: 'info', duration: 1000 });
+        setTimeout(() => location.hash = map[key] || '#/dashboard', 200);
+      },
+
+      openCardMenu(e) {
+        const r = e.currentTarget.getBoundingClientRect();
+        this.menu = {
+          open: true, x: Math.min(r.right - 220, window.innerWidth - 240), y: r.bottom + 6,
+          items: [
+            { icon: 'ic-edit',       label: 'Rename card',        action: () => window.toast('Open Settings to rename', { type: 'info' }) },
+            { icon: 'ic-eye',        label: 'View card details',  action: () => location.hash = '#/wallet' },
+            { icon: 'ic-snowflake',  label: 'Freeze card',        action: () => window.toast('Card frozen ❄') },
+            { icon: 'ic-copy',       label: 'Copy card number',   action: () => { navigator.clipboard?.writeText('4242 4242 4242 8744'); window.toast('Card number copied'); } },
+            { icon: 'ic-trash',      label: 'Remove card',        action: () => window.confirmDialog('Remove this card?', { destructive: true }).then(ok => { if (ok) window.toast('Card removed'); }), destructive: true, divider: true },
+          ],
+        };
+      },
+      openStatMenu(e, stat) {
+        const r = e.currentTarget.getBoundingClientRect();
+        this.menu = {
+          open: true, x: Math.min(r.right - 200, window.innerWidth - 220), y: r.bottom + 6,
+          items: [
+            { icon: 'ic-eye',      label: 'View details',  action: () => this.navigateStat(stat.key) },
+            { icon: 'ic-download', label: 'Export data',   action: () => window.toast('Exported ' + stat.label + ' data') },
+            { icon: 'ic-trash',    label: 'Hide card',     action: () => window.toast(stat.label + ' hidden (refresh to restore)', { type: 'info' }) },
+          ],
+        };
+      },
+      openRowMenu(e, t) {
+        const r = e.currentTarget.getBoundingClientRect();
+        this.menu = {
+          open: true, x: Math.min(r.right - 220, window.innerWidth - 240), y: r.bottom + 6,
+          items: [
+            { icon: 'ic-eye',      label: 'View details',     action: () => this.openTransaction(t) },
+            { icon: 'ic-copy',     label: 'Copy ID',          action: () => { navigator.clipboard?.writeText(t.id); window.toast('ID copied'); } },
+            { icon: 'ic-repeat',   label: 'Repeat',           action: () => window.toast('Duplicated as pending') },
+            { icon: 'ic-download', label: 'Download receipt', action: () => window.toast('Receipt downloaded') },
+            { icon: 'ic-trash',    label: 'Delete',           action: () => window.confirmDialog('Delete this transaction?', { destructive: true }).then(ok => { if (ok) window.toast('Transaction deleted'); }), destructive: true, divider: true },
+          ],
+        };
+      },
+      runMenu(item) { this.menu.open = false; item.action?.(); },
+
+      openTransaction(t) { this.detailTxn = t; },
+      openBill(bill) { window.toast('Opening ' + bill.name + '…', { type: 'info' }); setTimeout(() => location.hash = '#/invoices', 200); },
+
+      toggleMiniRow(id) {
+        if (this.selectedMini.includes(id)) this.selectedMini = this.selectedMini.filter(x => x !== id);
+        else this.selectedMini.push(id);
+      },
+      toggleAllMini() {
+        if (this.allMiniSelected) this.selectedMini = [];
+        else this.selectedMini = this.miniTransactions.map(t => t.id);
+      },
+
+      formatAmount(n) { return window.MonefyData?.formatAmount?.(n) || '$' + n.toFixed(2); },
+      formatDate(iso) {
+        const d = new Date(iso);
+        const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+        let h = d.getHours();
+        const ampm = h >= 12 ? 'PM' : 'AM';
+        h = h % 12 || 12;
+        return `${String(d.getDate()).padStart(2,'0')} ${months[d.getMonth()]} ${d.getFullYear()}, ${String(h).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')} ${ampm}`;
+      },
+    }
+  }
+</script>

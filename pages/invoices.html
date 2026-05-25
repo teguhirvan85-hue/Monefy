@@ -1,0 +1,526 @@
+<div x-data="invoicesPage()" x-init="init()" class="absolute inset-0 flex flex-col">
+
+  <!-- ===== Top Header ===== -->
+  <header class="w-full bg-white border-b border-g-100 flex items-center justify-between px-4 py-6 shrink-0">
+    <button @click="window.toast('Command palette coming in Phase 7', { type: 'info' })" class="bg-white rounded-full shadow-card flex items-center gap-2 px-3 py-2 w-[238px] hover:shadow-md transition-shadow focus:outline-none focus:ring-2 focus:ring-p-300">
+      <span class="ic ic-16 ic-search text-g-400"></span>
+      <span class="flex-1 text-left text-[14px] font-medium tracking-wide2 text-g-400">Search anything…</span>
+      <kbd class="text-[11px] font-medium bg-g-50 border border-g-100 rounded px-1.5 py-0.5 text-g-400">⌘K</kbd>
+    </button>
+    <div class="flex items-center gap-4">
+      <button class="relative bg-white rounded-full shadow-card p-2.5 hover:bg-g-25 transition-colors">
+        <span class="ic ic-20 ic-bell text-g-900"></span>
+        <span class="absolute top-[11px] right-[11px] w-1.5 h-1.5 rounded-full bg-err-100 border border-white"></span>
+      </button>
+      <div class="vdiv"></div>
+      <button @click="window.openReferral()" class="flex items-center gap-2 h-10 px-3 pr-4 rounded-full text-white text-[14px] font-medium border border-g-500 shadow-card hover:brightness-110 transition"
+              style="background-image: linear-gradient(180deg, rgba(255,255,255,0.24) 0%, rgba(255,255,255,0) 100%), linear-gradient(90deg, #163300 0%, #163300 100%);">
+        <span class="ic ic-20 ic-gift text-white"></span>Earn $90
+      </button>
+    </div>
+  </header>
+
+  <!-- ===== Title + Actions ===== -->
+  <section class="w-full border-b border-g-100 flex items-center gap-4 p-4 shrink-0">
+    <div class="flex-1 flex flex-col gap-1 min-w-0">
+      <h1 class="text-[24px] font-semibold leading-[1.3] tracking-tight2 text-g-900">Invoices</h1>
+      <p class="text-[14px] text-g-400"><span x-text="filtered.length"></span> of <span x-text="invoices.length"></span> invoices · <span class="text-g-900 font-medium" x-text="'$' + totals.all.toLocaleString('en-US', { minimumFractionDigits: 2 }) + ' billed'"></span></p>
+    </div>
+    <div class="flex items-center gap-2">
+      <button @click="exportInvoices()" class="bg-white border border-g-100 rounded-full shadow-card h-12 px-4 flex items-center gap-2 hover:bg-g-25 transition-colors">
+        <span class="ic ic-20 ic-download text-g-900"></span>
+        <span class="text-[16px] font-semibold text-g-900">Export</span>
+      </button>
+      <button @click="newInvoiceOpen = true" class="bg-p-300 rounded-full h-12 px-4 flex items-center gap-2 hover:bg-p-200 transition-colors">
+        <span class="ic ic-20 ic-plus" style="color:#163300"></span>
+        <span class="text-[16px] font-semibold text-s-300">Create Invoice</span>
+      </button>
+    </div>
+  </section>
+
+  <!-- ===== KPI Cards (consistent with Dashboard/Reports stat pattern) ===== -->
+  <section class="w-full px-4 pt-4 grid grid-cols-4 gap-4 shrink-0">
+    <!-- Outstanding -->
+    <div @click="statusFilter = 'Pending'; page = 1" role="button" tabindex="0" @keydown.enter="statusFilter = 'Pending'; page = 1"
+         class="bg-white rounded-xl shadow-card p-4 flex items-center overflow-hidden cursor-pointer hover:shadow-md hover:-translate-y-0.5 transition-all focus:outline-none focus:ring-2 focus:ring-p-300 group">
+      <div class="flex-1 flex flex-col gap-2 min-w-0">
+        <div class="flex items-center gap-3 w-full">
+          <span class="flex-1 text-[14px] font-semibold leading-[1.5] tracking-wide2 text-g-900">Outstanding</span>
+          <button class="w-5 h-5 flex items-center justify-center rounded hover:bg-g-50 transition-colors"><span class="ic ic-16 ic-dots-v text-g-900"></span></button>
+        </div>
+        <div class="flex items-center gap-2 w-full">
+          <span class="text-[24px] font-semibold leading-[1.3] tracking-tight2 text-g-900 whitespace-nowrap" x-text="'$' + totals.outstanding.toLocaleString('en-US', { maximumFractionDigits: 0 })"></span>
+          <span class="h-6 bg-[#FFF7E5] border border-[rgba(255,170,0,0.25)] rounded-md px-1 flex items-center text-[12px] font-semibold tracking-wide1 text-[#B8860B]" x-text="counts.pending + ' pending'"></span>
+        </div>
+      </div>
+    </div>
+    <!-- Paid this month -->
+    <div @click="statusFilter = 'Paid'; page = 1" role="button" tabindex="0" @keydown.enter="statusFilter = 'Paid'; page = 1"
+         class="bg-white rounded-xl shadow-card p-4 flex items-center overflow-hidden cursor-pointer hover:shadow-md hover:-translate-y-0.5 transition-all focus:outline-none focus:ring-2 focus:ring-p-300 group">
+      <div class="flex-1 flex flex-col gap-2 min-w-0">
+        <div class="flex items-center gap-3 w-full">
+          <span class="flex-1 text-[14px] font-semibold leading-[1.5] tracking-wide2 text-g-900">Paid this month</span>
+          <button class="w-5 h-5 flex items-center justify-center rounded hover:bg-g-50 transition-colors"><span class="ic ic-16 ic-dots-v text-g-900"></span></button>
+        </div>
+        <div class="flex items-center gap-2 w-full">
+          <span class="text-[24px] font-semibold leading-[1.3] tracking-tight2 text-g-900 whitespace-nowrap" x-text="'$' + totals.paid.toLocaleString('en-US', { maximumFractionDigits: 0 })"></span>
+          <span class="h-6 bg-suc-0 border border-[rgba(64,196,170,0.2)] rounded-md px-1 flex items-center text-[12px] font-semibold tracking-wide1 text-suc-200">+12%</span>
+        </div>
+      </div>
+    </div>
+    <!-- Overdue -->
+    <div @click="statusFilter = 'Overdue'; page = 1" role="button" tabindex="0" @keydown.enter="statusFilter = 'Overdue'; page = 1"
+         class="bg-white rounded-xl shadow-card p-4 flex items-center overflow-hidden cursor-pointer hover:shadow-md hover:-translate-y-0.5 transition-all focus:outline-none focus:ring-2 focus:ring-p-300 group">
+      <div class="flex-1 flex flex-col gap-2 min-w-0">
+        <div class="flex items-center gap-3 w-full">
+          <span class="flex-1 text-[14px] font-semibold leading-[1.5] tracking-wide2 text-g-900">Overdue</span>
+          <button class="w-5 h-5 flex items-center justify-center rounded hover:bg-g-50 transition-colors"><span class="ic ic-16 ic-dots-v text-g-900"></span></button>
+        </div>
+        <div class="flex items-center gap-2 w-full">
+          <span class="text-[24px] font-semibold leading-[1.3] tracking-tight2 text-g-900 whitespace-nowrap" x-text="'$' + totals.overdue.toLocaleString('en-US', { maximumFractionDigits: 0 })"></span>
+          <span class="h-6 bg-err-0 border border-[rgba(223,28,65,0.1)] rounded-md px-1 flex items-center text-[12px] font-semibold tracking-wide1 text-err-200" x-text="counts.overdue + ' alert'"></span>
+        </div>
+      </div>
+    </div>
+    <!-- Drafts -->
+    <div @click="statusFilter = 'Draft'; page = 1" role="button" tabindex="0" @keydown.enter="statusFilter = 'Draft'; page = 1"
+         class="bg-white rounded-xl shadow-card p-4 flex items-center overflow-hidden cursor-pointer hover:shadow-md hover:-translate-y-0.5 transition-all focus:outline-none focus:ring-2 focus:ring-p-300 group">
+      <div class="flex-1 flex flex-col gap-2 min-w-0">
+        <div class="flex items-center gap-3 w-full">
+          <span class="flex-1 text-[14px] font-semibold leading-[1.5] tracking-wide2 text-g-900">Drafts</span>
+          <button class="w-5 h-5 flex items-center justify-center rounded hover:bg-g-50 transition-colors"><span class="ic ic-16 ic-dots-v text-g-900"></span></button>
+        </div>
+        <div class="flex items-center gap-2 w-full">
+          <span class="text-[24px] font-semibold leading-[1.3] tracking-tight2 text-g-900 whitespace-nowrap" x-text="counts.draft + ' draft' + (counts.draft !== 1 ? 's' : '')"></span>
+          <span class="h-6 bg-g-50 border border-g-100 rounded-md px-1 flex items-center text-[12px] font-semibold tracking-wide1 text-g-500">Pending</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== Filter Bar ===== -->
+  <section class="w-full px-4 pt-4 pb-3 flex items-center gap-3 shrink-0">
+    <div class="bg-white rounded-full shadow-card flex items-center gap-2 px-3 py-2 w-[300px] focus-within:ring-2 focus-within:ring-p-300 transition-shadow">
+      <span class="ic ic-16 ic-search text-g-400"></span>
+      <input type="text" x-model="search" placeholder="Search by client, number, amount..." class="flex-1 bg-transparent outline-none text-[14px] text-g-900 placeholder:text-g-400"/>
+      <template x-if="search"><button @click="search = ''" class="text-g-400 hover:text-g-900">✕</button></template>
+    </div>
+
+    <div class="bg-g-50 border border-g-100 rounded-full flex items-center overflow-hidden h-9">
+      <template x-for="s in statuses" :key="s">
+        <button @click="statusFilter = s; page = 1"
+                class="px-3 h-full flex items-center gap-1.5 text-[12px] transition-colors"
+                :class="statusFilter === s ? 'bg-white text-g-900 font-semibold rounded-full m-0.5 shadow-card' : 'text-g-400 font-medium hover:text-g-900'">
+          <span class="w-2 h-2 rounded-full"
+                :class="{ 'bg-g-300': s === 'All', 'bg-suc-100': s === 'Paid', 'bg-[#FFA500]': s === 'Pending', 'bg-err-100': s === 'Overdue', 'bg-g-400': s === 'Draft' }"></span>
+          <span x-text="s"></span>
+        </button>
+      </template>
+    </div>
+
+    <div class="flex-1"></div>
+
+    <template x-if="hasFilters">
+      <button @click="resetFilters()" class="text-[12px] font-medium text-s-300 hover:underline">Clear filters</button>
+    </template>
+  </section>
+
+  <!-- ===== Invoices Table ===== -->
+  <section class="flex-1 mx-4 mb-4 bg-white rounded-xl shadow-card flex flex-col overflow-hidden min-h-0">
+    <template x-if="filtered.length === 0">
+      <div class="flex-1 flex flex-col items-center justify-center gap-3 p-8">
+        <div class="w-16 h-16 rounded-full bg-g-25 flex items-center justify-center">
+          <span class="ic ic-clipboard text-g-400" style="width: 28px; height: 28px; -webkit-mask-size: 22px 28px; mask-size: 22px 28px;"></span>
+        </div>
+        <div class="text-center">
+          <h3 class="text-[16px] font-semibold text-g-900">No invoices found</h3>
+          <p class="text-[14px] text-g-400 mt-1">Try changing your filters or create a new invoice.</p>
+        </div>
+        <button @click="resetFilters()" class="bg-white border border-g-100 rounded-full h-10 px-4 text-[13px] font-medium text-g-900 hover:bg-g-25">Reset filters</button>
+      </div>
+    </template>
+
+    <div x-show="filtered.length > 0" class="flex flex-col flex-1 min-h-0">
+      <!-- Header -->
+      <div class="bg-g-25 border-b border-g-100 flex items-center h-10 px-4 shrink-0">
+        <span class="w-[140px] text-[12px] font-medium text-g-400 uppercase tracking-wider">Invoice #</span>
+        <span class="flex-1 text-[12px] font-medium text-g-400 uppercase tracking-wider">Client</span>
+        <span class="w-[120px] text-[12px] font-medium text-g-400 uppercase tracking-wider text-right">Amount</span>
+        <span class="w-[120px] text-[12px] font-medium text-g-400 uppercase tracking-wider px-4">Issued</span>
+        <span class="w-[120px] text-[12px] font-medium text-g-400 uppercase tracking-wider px-4">Due</span>
+        <span class="w-[120px] text-[12px] font-medium text-g-400 uppercase tracking-wider">Status</span>
+        <span class="w-12"></span>
+      </div>
+
+      <!-- Rows -->
+      <div class="flex-1 overflow-y-auto">
+        <template x-for="inv in paged" :key="inv.id">
+          <div class="relative border-b border-g-100 flex items-center h-16 px-4 cursor-pointer transition-all group"
+               :class="inv.status === 'Overdue' ? 'hover:bg-err-0/40' : 'hover:bg-g-25'"
+               @click="openDetail(inv)">
+            <!-- Overdue indicator stripe -->
+            <span x-show="inv.status === 'Overdue'" class="absolute left-0 top-2 bottom-2 w-1 rounded-r-full bg-err-100"></span>
+
+            <!-- Number -->
+            <div class="w-[140px]">
+              <div class="text-[13px] font-semibold text-g-900 font-mono" x-text="inv.number"></div>
+              <div class="text-[10px] text-g-400 mt-0.5" x-text="'ID ' + inv.id.toUpperCase()"></div>
+            </div>
+            <!-- Client with deterministic gradient avatar -->
+            <div class="flex-1 flex items-center gap-3 min-w-0">
+              <div class="w-9 h-9 rounded-full text-white flex items-center justify-center text-[12px] font-bold shrink-0 shadow-sm transition-transform group-hover:scale-110"
+                   :style="`background: ${clientGradient(inv.client)}`" x-text="clientInitials(inv.client)"></div>
+              <div class="min-w-0">
+                <div class="text-[13px] font-semibold text-g-900 truncate" x-text="inv.client"></div>
+                <div class="text-[11px] text-g-400 truncate" x-text="inv.clientEmail || 'No email on file'"></div>
+              </div>
+            </div>
+            <!-- Amount -->
+            <div class="w-[120px] text-right">
+              <div class="text-[13px] font-semibold text-g-900" x-text="'$' + inv.amount.toLocaleString('en-US', { minimumFractionDigits: 2 })"></div>
+              <div class="text-[10px] text-g-400 mt-0.5" x-text="inv.items.length + ' item' + (inv.items.length > 1 ? 's' : '')"></div>
+            </div>
+            <!-- Issued -->
+            <div class="w-[120px] px-4">
+              <span class="text-[12px] text-g-900" x-text="formatDate(inv.issued)"></span>
+            </div>
+            <!-- Due -->
+            <div class="w-[120px] px-4">
+              <span class="text-[12px] text-g-900" x-text="formatDate(inv.due)"></span>
+              <template x-if="inv.status === 'Overdue'">
+                <div class="text-[10px] text-err-200 mt-0.5 font-semibold" x-text="daysOverdue(inv.due) + 'd overdue'"></div>
+              </template>
+              <template x-if="inv.status === 'Pending' && daysToDue(inv.due) <= 7 && daysToDue(inv.due) > 0">
+                <div class="text-[10px] text-[#B8860B] mt-0.5 font-semibold" x-text="'in ' + daysToDue(inv.due) + 'd'"></div>
+              </template>
+            </div>
+            <!-- Status -->
+            <div class="w-[120px]">
+              <span class="rounded-full px-2 py-0.5 text-[11px] font-semibold border inline-flex items-center gap-1.5"
+                    :class="{
+                      'bg-suc-0 border-[rgba(64,196,170,0.2)] text-suc-200': inv.status === 'Paid',
+                      'bg-[#FFF7E5] border-[rgba(255,170,0,0.25)] text-[#B8860B]': inv.status === 'Pending',
+                      'bg-err-0 border-[rgba(223,28,65,0.2)] text-err-200': inv.status === 'Overdue',
+                      'bg-g-50 border-g-100 text-g-500': inv.status === 'Draft'
+                    }">
+                <span class="w-1.5 h-1.5 rounded-full"
+                      :class="{ 'bg-suc-100': inv.status === 'Paid', 'bg-[#FFA500]': inv.status === 'Pending', 'bg-err-100': inv.status === 'Overdue', 'bg-g-400': inv.status === 'Draft' }"></span>
+                <span x-text="inv.status"></span>
+              </span>
+            </div>
+            <!-- Action -->
+            <div class="w-12 flex justify-center" @click.stop>
+              <button @click="openMenu($event, inv)" class="w-8 h-8 rounded-full hover:bg-g-100 flex items-center justify-center">
+                <span class="ic ic-16 ic-dots-v text-g-900"></span>
+              </button>
+            </div>
+          </div>
+        </template>
+      </div>
+
+      <!-- Pagination -->
+      <div class="border-t border-g-100 h-12 flex items-center px-4 bg-g-25 shrink-0">
+        <span class="text-[12px] text-g-400">Showing <span class="font-medium text-g-900" x-text="((page-1)*perPage)+1"></span>–<span class="font-medium text-g-900" x-text="Math.min(page*perPage, filtered.length)"></span> of <span class="font-medium text-g-900" x-text="filtered.length"></span></span>
+        <div class="flex-1"></div>
+        <div class="flex items-center gap-1">
+          <button @click="page--" :disabled="page === 1" class="w-8 h-8 rounded-lg border border-g-100 bg-white text-g-400 hover:text-g-900 disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center">‹</button>
+          <template x-for="p in totalPages" :key="p">
+            <button @click="page = p" class="w-8 h-8 rounded-lg text-[12px] font-semibold transition-colors"
+                    :class="page === p ? 'bg-s-300 text-white' : 'border border-g-100 bg-white text-g-400 hover:text-g-900'" x-text="p"></button>
+          </template>
+          <button @click="page++" :disabled="page === totalPages" class="w-8 h-8 rounded-lg border border-g-100 bg-white text-g-400 hover:text-g-900 disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center">›</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Context Menu -->
+  <div x-show="menu.open" x-cloak @click.outside="menu.open = false" :style="`top: ${menu.y}px; left: ${menu.x}px;`" class="fixed bg-white border border-g-100 popup-menu shadow-pop z-50">
+    <template x-for="(item, idx) in menu.items" :key="item.label">
+      <div>
+        <div x-show="item.divider" class="popup-menu-divider"></div>
+        <button @click="runMenu(item)" class="popup-menu-item" :class="{ 'destructive': item.destructive }">
+          <span class="ic-wrap"><span class="ic ic-16" :class="item.icon" :style="`color: ${item.destructive ? '#95122B' : '#0A0A0A'}`"></span></span>
+          <span x-text="item.label"></span>
+        </button>
+      </div>
+    </template>
+  </div>
+
+  <!-- Detail Drawer -->
+  <div x-show="detail" x-cloak x-transition.opacity @keydown.escape.window="detail = null"
+       class="fixed inset-0 bg-black/40 z-40 flex justify-end" @click.self="detail = null">
+    <div x-show="detail" x-cloak
+         x-transition:enter="transition ease-out duration-200" x-transition:enter-start="translate-x-full" x-transition:enter-end="translate-x-0"
+         x-transition:leave="transition ease-in duration-150" x-transition:leave-start="translate-x-0" x-transition:leave-end="translate-x-full"
+         class="w-[480px] h-full bg-white shadow-2xl flex flex-col">
+      <template x-if="detail">
+        <div class="flex flex-col h-full">
+          <div class="h-16 px-5 border-b border-g-100 flex items-center gap-3 shrink-0">
+            <h2 class="flex-1 text-[16px] font-semibold text-g-900" x-text="detail.number"></h2>
+            <span class="rounded-full px-2 py-0.5 text-[11px] font-semibold border inline-flex items-center gap-1.5"
+                  :class="{
+                    'bg-suc-0 border-[rgba(64,196,170,0.2)] text-suc-200': detail.status === 'Paid',
+                    'bg-[#FFF7E5] border-[rgba(255,170,0,0.25)] text-[#B8860B]': detail.status === 'Pending',
+                    'bg-err-0 border-[rgba(223,28,65,0.2)] text-err-200': detail.status === 'Overdue',
+                    'bg-g-50 border-g-100 text-g-500': detail.status === 'Draft'
+                  }">
+              <span class="w-1.5 h-1.5 rounded-full" :class="{ 'bg-suc-100': detail.status === 'Paid', 'bg-[#FFA500]': detail.status === 'Pending', 'bg-err-100': detail.status === 'Overdue', 'bg-g-400': detail.status === 'Draft' }"></span>
+              <span x-text="detail.status"></span>
+            </span>
+            <button @click="detail = null" class="w-8 h-8 rounded-full hover:bg-g-50 flex items-center justify-center text-g-400 hover:text-g-900">✕</button>
+          </div>
+
+          <div class="flex-1 overflow-y-auto p-5 flex flex-col gap-5">
+            <!-- Big amount -->
+            <div class="bg-g-25 rounded-xl border border-g-100 p-5 flex flex-col items-center text-center gap-1">
+              <span class="text-[11px] uppercase tracking-wider text-g-400 font-medium">Total amount</span>
+              <span class="text-[32px] font-semibold tracking-tight2 text-g-900" x-text="'$' + detail.amount.toLocaleString('en-US', { minimumFractionDigits: 2 })"></span>
+              <span class="text-[12px] text-g-400" x-text="'Due ' + formatDate(detail.due)"></span>
+            </div>
+
+            <!-- Client info -->
+            <div class="flex flex-col gap-2">
+              <span class="text-[11px] uppercase tracking-wider text-g-400 font-medium">Bill to</span>
+              <div class="bg-white border border-g-100 rounded-xl p-4 flex items-center gap-3">
+                <div class="w-10 h-10 rounded-full bg-s-300 text-white flex items-center justify-center text-[14px] font-bold" x-text="detail.client.charAt(0)"></div>
+                <div class="flex-1 min-w-0">
+                  <div class="text-[14px] font-semibold text-g-900" x-text="detail.client"></div>
+                  <div class="text-[12px] text-g-400" x-text="detail.clientEmail || 'No email on file'"></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Line items -->
+            <div class="flex flex-col gap-2">
+              <span class="text-[11px] uppercase tracking-wider text-g-400 font-medium">Items</span>
+              <div class="bg-white border border-g-100 rounded-xl overflow-hidden">
+                <template x-for="(item, i) in detail.items" :key="i">
+                  <div class="flex items-center gap-3 p-3 border-b border-g-100 last:border-0">
+                    <div class="flex-1 min-w-0">
+                      <div class="text-[13px] font-medium text-g-900" x-text="item.desc"></div>
+                      <div class="text-[11px] text-g-400 mt-0.5" x-text="item.qty + ' × $' + item.price.toLocaleString('en-US', { minimumFractionDigits: 2 })"></div>
+                    </div>
+                    <span class="text-[13px] font-semibold text-g-900" x-text="'$' + (item.qty * item.price).toLocaleString('en-US', { minimumFractionDigits: 2 })"></span>
+                  </div>
+                </template>
+                <div class="bg-g-25 px-4 py-3 flex items-center border-t border-g-100">
+                  <span class="flex-1 text-[12px] font-semibold text-g-900">Total</span>
+                  <span class="text-[14px] font-semibold text-g-900" x-text="'$' + detail.amount.toLocaleString('en-US', { minimumFractionDigits: 2 })"></span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Meta -->
+            <div class="bg-white border border-g-100 rounded-xl flex flex-col">
+              <div class="flex items-center gap-3 px-4 py-3 border-b border-g-100"><span class="flex-1 text-[12px] text-g-400">Issued</span><span class="text-[13px] font-medium text-g-900" x-text="formatDate(detail.issued)"></span></div>
+              <div class="flex items-center gap-3 px-4 py-3"><span class="flex-1 text-[12px] text-g-400">Due</span><span class="text-[13px] font-medium text-g-900" x-text="formatDate(detail.due)"></span></div>
+            </div>
+          </div>
+
+          <div class="border-t border-g-100 p-4 flex items-center gap-2 shrink-0">
+            <button @click="downloadInvoice(detail)" class="flex-1 h-11 rounded-full bg-white border border-g-100 text-[14px] font-semibold text-g-900 hover:bg-g-25">Download PDF</button>
+            <template x-if="detail.status !== 'Paid'"><button @click="markPaid(detail.id); detail = null" class="flex-1 h-11 rounded-full bg-p-300 hover:bg-p-200 text-[14px] font-semibold text-s-300">Mark as paid</button></template>
+            <template x-if="detail.status === 'Paid'"><button @click="downloadInvoice(detail)" class="flex-1 h-11 rounded-full bg-s-300 text-white hover:bg-s-200 text-[14px] font-semibold">Send receipt</button></template>
+          </div>
+        </div>
+      </template>
+    </div>
+  </div>
+
+  <!-- New Invoice Modal -->
+  <div x-show="newInvoiceOpen" x-cloak x-transition.opacity @keydown.escape.window="newInvoiceOpen = false"
+       class="fixed inset-0 bg-black/40 z-40 flex items-center justify-center px-4" @click.self="newInvoiceOpen = false">
+    <div x-show="newInvoiceOpen" x-transition class="bg-white rounded-2xl shadow-pop max-w-[520px] w-full">
+      <div class="h-16 px-5 border-b border-g-100 flex items-center gap-3">
+        <h2 class="flex-1 text-[16px] font-semibold text-g-900">Create Invoice</h2>
+        <button @click="newInvoiceOpen = false" class="w-8 h-8 rounded-full hover:bg-g-50 flex items-center justify-center text-g-400">✕</button>
+      </div>
+      <form @submit.prevent="submitNewInvoice()" class="p-5 flex flex-col gap-4">
+        <div class="grid grid-cols-2 gap-3">
+          <div><label class="form-label">Client name</label><input type="text" class="form-input" x-model="newInv.client" required/></div>
+          <div><label class="form-label">Client email</label><input type="email" class="form-input" x-model="newInv.clientEmail"/></div>
+        </div>
+        <div><label class="form-label">Description</label><input type="text" class="form-input" x-model="newInv.desc" required placeholder="What is this invoice for?"/></div>
+        <div class="grid grid-cols-2 gap-3">
+          <div><label class="form-label">Amount (USD)</label><input type="number" step="0.01" class="form-input" x-model.number="newInv.amount" required/></div>
+          <div><label class="form-label">Due date</label><input type="date" class="form-input" x-model="newInv.due" required/></div>
+        </div>
+        <div class="flex items-center gap-2 pt-2">
+          <button type="button" @click="saveDraft()" class="flex-1 h-11 rounded-full border border-g-100 text-[14px] font-semibold text-g-900 hover:bg-g-25">Save as draft</button>
+          <button type="submit" class="flex-1 h-11 rounded-full bg-p-300 hover:bg-p-200 text-[14px] font-semibold text-s-300">Send invoice</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+  function invoicesPage() {
+    return {
+      invoices: [], search: '', statusFilter: 'All', sortKey: 'due',
+      statuses: ['All','Paid','Pending','Overdue','Draft'],
+      page: 1, perPage: 8,
+      detail: null, newInvoiceOpen: false,
+      newInv: { client: '', clientEmail: '', desc: '', amount: null, due: '' },
+      menu: { open: false, x: 0, y: 0, items: [], target: null },
+
+      init() {
+        this.invoices = [...window.MonefyData.invoices];
+      },
+
+      get filtered() {
+        let list = this.invoices;
+        if (this.statusFilter !== 'All') list = list.filter(i => i.status === this.statusFilter);
+        if (this.search.trim()) {
+          const q = this.search.toLowerCase();
+          list = list.filter(i => i.client.toLowerCase().includes(q) || i.number.toLowerCase().includes(q) || String(i.amount).includes(q));
+        }
+        return [...list].sort((a, b) => new Date(b.issued) - new Date(a.issued));
+      },
+      get totals() {
+        return {
+          all:         this.invoices.reduce((s, i) => s + i.amount, 0),
+          outstanding: this.invoices.filter(i => i.status === 'Pending').reduce((s, i) => s + i.amount, 0),
+          paid:        this.invoices.filter(i => i.status === 'Paid').reduce((s, i) => s + i.amount, 0),
+          overdue:     this.invoices.filter(i => i.status === 'Overdue').reduce((s, i) => s + i.amount, 0),
+        };
+      },
+      get counts() {
+        return {
+          paid: this.invoices.filter(i => i.status === 'Paid').length,
+          pending: this.invoices.filter(i => i.status === 'Pending').length,
+          overdue: this.invoices.filter(i => i.status === 'Overdue').length,
+          draft: this.invoices.filter(i => i.status === 'Draft').length,
+        };
+      },
+      get hasFilters() { return this.search || this.statusFilter !== 'All'; },
+      get totalPages() { return Math.max(1, Math.ceil(this.filtered.length / this.perPage)); },
+      get paged() { const s = (this.page - 1) * this.perPage; return this.filtered.slice(s, s + this.perPage); },
+
+      formatDate(iso) {
+        const d = new Date(iso);
+        return d.toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' });
+      },
+      daysToDue(iso) { return Math.ceil((new Date(iso) - new Date()) / 86400000); },
+      daysOverdue(iso) { return Math.abs(Math.floor((new Date() - new Date(iso)) / 86400000)); },
+
+      // Deterministic gradient per client name (8 palette options)
+      clientGradient(name) {
+        const palette = [
+          'linear-gradient(135deg, #163300 0%, #455C33 100%)', // dark green
+          'linear-gradient(135deg, #DF1C41 0%, #E55D2A 100%)', // red→orange
+          'linear-gradient(135deg, #1434CB 0%, #4B6CFF 100%)', // blue
+          'linear-gradient(135deg, #936DFF 0%, #B49AFF 100%)', // purple
+          'linear-gradient(135deg, #287F6E 0%, #40C4AA 100%)', // teal
+          'linear-gradient(135deg, #B8860B 0%, #FFB200 100%)', // amber
+          'linear-gradient(135deg, #525252 0%, #737373 100%)', // grey
+          'linear-gradient(135deg, #738566 0%, #A2AD99 100%)', // sage
+        ];
+        let h = 0;
+        for (let i = 0; i < name.length; i++) h = ((h << 5) - h) + name.charCodeAt(i);
+        return palette[Math.abs(h) % palette.length];
+      },
+      clientInitials(name) {
+        return name.split(/\s+/).map(w => w.charAt(0)).join('').slice(0, 2).toUpperCase();
+      },
+
+      openDetail(inv) { this.detail = inv; },
+      resetFilters() { this.search = ''; this.statusFilter = 'All'; this.page = 1; },
+
+      openMenu(e, inv) {
+        const r = e.currentTarget.getBoundingClientRect();
+        this.menu = {
+          open: true,
+          x: Math.min(r.right - 220, window.innerWidth - 240), y: r.bottom + 4,
+          target: inv,
+          items: [
+            { icon: 'ic-eye',      label: 'View details',    action: 'view' },
+            { icon: 'ic-edit',     label: 'Edit invoice',    action: 'edit' },
+            { icon: 'ic-download', label: 'Download PDF',    action: 'download' },
+            { icon: 'ic-send',     label: 'Send reminder',   action: 'remind' },
+            { icon: 'ic-check',    label: 'Mark as paid',    action: 'paid' },
+            { icon: 'ic-copy',     label: 'Duplicate',       action: 'dup' },
+            { icon: 'ic-trash',    label: 'Delete',          action: 'del', destructive: true, divider: true },
+          ],
+        };
+      },
+      runMenu(item) {
+        const t = this.menu.target;
+        this.menu.open = false;
+        switch (item.action) {
+          case 'view': this.openDetail(t); break;
+          case 'edit': window.toast('Edit mode coming soon', { type: 'info' }); break;
+          case 'download': this.downloadInvoice(t); break;
+          case 'remind': window.toast('Reminder sent to ' + (t.clientEmail || t.client)); break;
+          case 'paid': this.markPaid(t.id); break;
+          case 'dup':
+            const dup = { ...t, id: 'i' + Date.now(), number: 'DRAFT-' + String(Date.now()).slice(-4), status: 'Draft' };
+            this.invoices = [dup, ...this.invoices];
+            window.toast('Invoice duplicated as draft');
+            break;
+          case 'del':
+            window.confirmDialog('Delete ' + t.number + '? This cannot be undone.', { destructive: true, confirmText: 'Delete' })
+              .then(ok => { if (ok) { this.invoices = this.invoices.filter(x => x.id !== t.id); window.toast('Invoice deleted'); } });
+            break;
+        }
+      },
+      markPaid(id) {
+        const inv = this.invoices.find(i => i.id === id);
+        if (inv) { inv.status = 'Paid'; this.invoices = [...this.invoices]; window.toast(inv.number + ' marked as paid'); }
+      },
+      downloadInvoice(inv) {
+        const text = `INVOICE ${inv.number}\n\nBill to: ${inv.client}\nEmail: ${inv.clientEmail || '—'}\nIssued: ${inv.issued}\nDue: ${inv.due}\nStatus: ${inv.status}\n\nItems:\n` +
+                     inv.items.map(it => `  • ${it.desc} — ${it.qty} × $${it.price.toFixed(2)} = $${(it.qty*it.price).toFixed(2)}`).join('\n') +
+                     `\n\nTOTAL: $${inv.amount.toFixed(2)}`;
+        const blob = new Blob([text], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a'); a.href = url; a.download = inv.number + '.txt'; a.click();
+        URL.revokeObjectURL(url);
+        window.toast('Invoice downloaded');
+      },
+      exportInvoices() {
+        const rows = [['Number','Client','Email','Amount','Issued','Due','Status']];
+        this.filtered.forEach(i => rows.push([i.number, i.client, i.clientEmail || '', i.amount, i.issued, i.due, i.status]));
+        const csv = rows.map(r => r.map(c => `"${c}"`).join(',')).join('\n');
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'invoices-' + Date.now() + '.csv'; a.click(); URL.revokeObjectURL(url);
+        window.toast('Exported ' + this.filtered.length + ' invoices as CSV');
+      },
+      submitNewInvoice() {
+        const newInv = {
+          id: 'i' + Date.now(),
+          number: 'INV-2024-' + String(Math.floor(Math.random() * 9000) + 1000),
+          client: this.newInv.client,
+          clientEmail: this.newInv.clientEmail,
+          amount: this.newInv.amount,
+          issued: new Date().toISOString().slice(0, 10),
+          due: this.newInv.due,
+          status: 'Pending',
+          items: [{ desc: this.newInv.desc, qty: 1, price: this.newInv.amount }],
+        };
+        this.invoices = [newInv, ...this.invoices];
+        this.newInvoiceOpen = false;
+        this.newInv = { client: '', clientEmail: '', desc: '', amount: null, due: '' };
+        window.toast('Invoice sent to ' + newInv.client);
+      },
+      saveDraft() {
+        const draft = {
+          id: 'i' + Date.now(),
+          number: 'DRAFT-' + String(Math.floor(Math.random() * 9000) + 1000),
+          client: this.newInv.client || 'Untitled client',
+          clientEmail: this.newInv.clientEmail,
+          amount: this.newInv.amount || 0,
+          issued: new Date().toISOString().slice(0, 10),
+          due: this.newInv.due || new Date().toISOString().slice(0, 10),
+          status: 'Draft',
+          items: [{ desc: this.newInv.desc || 'TBD', qty: 1, price: this.newInv.amount || 0 }],
+        };
+        this.invoices = [draft, ...this.invoices];
+        this.newInvoiceOpen = false;
+        this.newInv = { client: '', clientEmail: '', desc: '', amount: null, due: '' };
+        window.toast('Saved as draft');
+      },
+    }
+  }
+</script>

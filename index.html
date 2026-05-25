@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=1440" />
+<title>Monefy — Dashboard</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<script src="https://cdn.tailwindcss.com"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        fontFamily: { sans: ['"Inter Tight"', 'system-ui', 'sans-serif'] },
+        colors: {
+          'g-0': '#FFFFFF', 'g-25': '#FAFAFA', 'g-50': '#F5F5F5',
+          'g-100': '#E5E5E5', 'g-300': '#A3A3A3', 'g-400': '#737373',
+          'g-500': '#525252', 'g-900': '#0A0A0A',
+          'p-200': '#B2ED8D', 'p-300': '#9FE870',
+          's-50': '#A2AD99', 's-100': '#738566', 's-200': '#455C33', 's-300': '#163300',
+          'suc-0': '#EFFEFA', 'suc-100': '#40C4AA', 'suc-200': '#287F6E',
+          'err-0': '#FEEFF2', 'err-100': '#DF1C41', 'err-200': '#95122B',
+          'por-0': '#F4F0FF', 'por-25': '#E9E2FF', 'por-100': '#936DFF',
+        },
+        boxShadow: {
+          'card': '0px 4px 8px -5px rgba(0,0,0,0.15), 0px 0px 0px 1px #E5E5E5',
+          'cb':   '0px 1px 2px 0px rgba(164,172,185,0.4), 0px 0px 0px 1px #DFE1E7',
+          'pop':  '0px 4px 5.5px rgba(13,13,18,0.12)',
+        },
+        letterSpacing: { 'tight2': '-0.48px', 'wide1': '0.24px', 'wide2': '0.28px', 'wide3': '0.32px' }
+      }
+    }
+  }
+</script>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body class="bg-white" x-data="appShell()" x-init="init()">
+
+<!-- ===================== ROOT FRAME 1440x1024 ===================== -->
+<div class="flex items-start w-[1440px] h-[1024px] bg-white mx-auto">
+
+  <!-- ============== SIDEBAR NAV (270 x 1024) — PERSISTENT ============== -->
+  <aside class="w-[270px] h-[1024px] bg-g-25 border-r border-g-100 flex flex-col shrink-0">
+    <!-- Logo -->
+    <div class="h-[72px] px-6 py-5 flex items-center">
+      <a href="#/dashboard" class="flex items-center gap-3">
+        <img src="assets/logo.svg" alt="Monefy" class="w-8 h-8" />
+        <span class="text-[24px] font-semibold leading-[1.3] tracking-tight2 text-g-900">Monefy</span>
+      </a>
+    </div>
+
+    <div class="flex-1 flex flex-col gap-6 px-4 py-5">
+      <!-- User card -->
+      <button @click="window.openAccountSwitcher($event)" class="bg-white rounded-lg shadow-card flex items-center gap-2 px-3 py-2.5 hover:bg-g-25 transition-colors focus:outline-none focus:ring-2 focus:ring-p-300">
+        <div class="flex-1 flex items-center gap-3 min-w-0">
+          <img src="assets/avatar-kristin-big.jpg" alt="" class="w-8 h-8 rounded-full object-cover" />
+          <div class="flex flex-col min-w-0 text-left">
+            <span class="text-[16px] leading-[1.5] tracking-wide3 font-medium text-g-900 truncate">Kristin Watson</span>
+            <span class="text-[12px] leading-[1.5] tracking-wide1 text-g-400">Personal Account</span>
+          </div>
+        </div>
+        <span class="ic ic-16 ic-chevron-down text-g-900"></span>
+      </button>
+
+      <!-- MAIN MENU -->
+      <div class="flex flex-col">
+        <div class="px-3 pb-3">
+          <span class="text-[12px] leading-[1.5] tracking-wide1 font-semibold text-g-300">MAIN MENU</span>
+        </div>
+        <nav class="flex flex-col gap-1">
+          <template x-for="key in mainMenu" :key="key">
+            <a :href="'#/' + key"
+               class="rounded-lg flex items-center gap-3 px-3 py-2 transition-colors"
+               :class="route === key ? 'bg-white shadow-card' : 'hover:bg-white/60'">
+              <span class="ic ic-20" :class="[ROUTES[key].icon, route === key ? 'text-g-900' : 'text-g-400']"></span>
+              <span class="flex-1 text-[16px] leading-[1.5] tracking-wide3"
+                    :class="route === key ? 'font-semibold text-g-900' : 'font-medium text-g-400'"
+                    x-text="ROUTES[key].label"></span>
+            </a>
+          </template>
+        </nav>
+      </div>
+
+      <!-- PREFERENCE -->
+      <div class="flex flex-col">
+        <div class="px-3 pt-2 pb-3">
+          <span class="text-[12px] leading-[1.5] tracking-wide1 font-semibold text-g-300">PREFERENCE</span>
+        </div>
+        <nav class="flex flex-col gap-1">
+          <template x-for="key in prefMenu" :key="key">
+            <a :href="'#/' + key"
+               class="rounded-lg flex items-center gap-3 px-3 py-2 transition-colors"
+               :class="route === key ? 'bg-white shadow-card' : 'hover:bg-white/60'">
+              <span class="ic ic-20" :class="[ROUTES[key].icon, route === key ? 'text-g-900' : 'text-g-400']"></span>
+              <span class="flex-1 text-[16px] leading-[1.5] tracking-wide3"
+                    :class="route === key ? 'font-semibold text-g-900' : 'font-medium text-g-400'"
+                    x-text="ROUTES[key].label"></span>
+            </a>
+          </template>
+        </nav>
+      </div>
+    </div>
+
+    <!-- Footer / Dark mode (visual only) -->
+    <div class="border-t border-g-100 px-6 py-5 flex items-center gap-3">
+      <span class="flex-1 text-[16px] font-medium leading-[1.5] tracking-wide3 text-g-400">Dark Mode</span>
+      <div class="w-[29.3px] h-[18px] bg-g-50 rounded-full flex items-center px-[1.3px] opacity-60 cursor-not-allowed" title="Light mode only">
+        <div class="toggle-knob"></div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ============== MAIN CONTENT — ROUTED ============== -->
+  <main id="page-content" class="flex-1 h-[1024px] bg-white relative overflow-hidden">
+    <!-- page fragment loaded here by js/app.js -->
+  </main>
+</div>
+
+<!-- ============== GLOBAL OVERLAYS ============== -->
+<div x-data="globalOverlays()" x-init="init()">
+
+  <!-- ===== Account Switcher Dropdown ===== -->
+  <div x-show="accountSwitcher.open" x-cloak @click.outside="accountSwitcher.open = false"
+       :style="`top: ${accountSwitcher.y}px; left: ${accountSwitcher.x}px;`"
+       x-transition.opacity
+       class="fixed bg-white border border-g-100 rounded-xl shadow-pop p-2 z-50 w-[280px]">
+    <div class="text-[10px] uppercase tracking-wider text-g-400 font-semibold px-3 py-2">Switch account</div>
+    <template x-for="acc in accounts" :key="acc.id">
+      <button @click="switchAccount(acc)"
+              class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-g-25 transition-colors text-left">
+        <img :src="acc.avatar" alt="" class="w-9 h-9 rounded-full object-cover shrink-0" />
+        <div class="flex-1 min-w-0">
+          <div class="text-[13px] font-semibold text-g-900 truncate" x-text="acc.name"></div>
+          <div class="text-[11px] text-g-400 truncate" x-text="acc.type"></div>
+        </div>
+        <template x-if="acc.active">
+          <span class="ic ic-16 ic-check" style="color: #287F6E"></span>
+        </template>
+      </button>
+    </template>
+    <div class="border-t border-g-100 my-2"></div>
+    <button @click="window.toast('Add account flow coming soon', { type: 'info' }); accountSwitcher.open = false" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-g-25 transition-colors text-left">
+      <span class="w-8 h-8 rounded-full bg-g-25 flex items-center justify-center"><span class="ic ic-16 ic-plus text-g-900"></span></span>
+      <span class="text-[13px] font-medium text-g-900">Add another account</span>
+    </button>
+    <a href="#/settings" @click="accountSwitcher.open = false" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-g-25 transition-colors">
+      <span class="w-8 h-8 rounded-full bg-g-25 flex items-center justify-center"><span class="ic ic-16 ic-settings text-g-900"></span></span>
+      <span class="text-[13px] font-medium text-g-900">Account settings</span>
+    </a>
+    <button @click="window.confirmDialog('Sign out of Monefy?', { confirmText: 'Sign out' }).then(ok => { if (ok) window.toast('Signed out (demo)'); }); accountSwitcher.open = false" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-err-0 transition-colors text-left">
+      <span class="w-8 h-8 rounded-full bg-err-0 flex items-center justify-center"><span class="ic ic-16 ic-switch" style="color: #95122B"></span></span>
+      <span class="text-[13px] font-medium text-err-200">Sign out</span>
+    </button>
+  </div>
+
+  <!-- ===== Command Palette (⌘K) ===== -->
+  <div x-show="commandOpen" x-cloak x-transition.opacity
+       @keydown.escape.window="commandOpen = false"
+       class="fixed inset-0 bg-black/40 backdrop-blur-sm z-[60] flex items-start justify-center pt-[120px] px-4"
+       @click.self="commandOpen = false">
+    <div x-show="commandOpen" x-cloak
+         x-transition:enter="transition ease-out duration-150"
+         x-transition:enter-start="opacity-0 -translate-y-4"
+         x-transition:enter-end="opacity-100 translate-y-0"
+         class="bg-white rounded-2xl shadow-pop max-w-[560px] w-full overflow-hidden">
+      <!-- Search bar -->
+      <div class="flex items-center gap-3 px-5 py-4 border-b border-g-100">
+        <span class="ic ic-20 ic-search text-g-400"></span>
+        <input type="text" x-model="cmdQuery" x-ref="cmdInput"
+               @keydown.arrow-down.prevent="cmdIndex = Math.min(cmdIndex + 1, cmdResults.length - 1)"
+               @keydown.arrow-up.prevent="cmdIndex = Math.max(cmdIndex - 1, 0)"
+               @keydown.enter.prevent="runCmd(cmdResults[cmdIndex])"
+               placeholder="Type a command or search…"
+               class="flex-1 bg-transparent outline-none text-[15px] text-g-900 placeholder:text-g-400" />
+        <kbd class="text-[10px] font-medium bg-g-50 border border-g-100 rounded px-1.5 py-0.5 text-g-400">esc</kbd>
+      </div>
+      <!-- Results -->
+      <div class="max-h-[420px] overflow-y-auto py-2">
+        <template x-if="cmdResults.length === 0">
+          <div class="px-5 py-8 text-center">
+            <div class="text-[13px] text-g-400">No results for "<span class="text-g-900 font-medium" x-text="cmdQuery"></span>"</div>
+            <button @click="commandOpen = false; window.location.hash = '#/help'" class="mt-2 text-[12px] font-semibold text-s-300 hover:underline">Browse help center →</button>
+          </div>
+        </template>
+        <template x-for="(c, i) in cmdResults" :key="c.id">
+          <button @click="runCmd(c)" @mouseenter="cmdIndex = i"
+                  class="w-full flex items-center gap-3 px-3 mx-2 py-2.5 rounded-lg transition-colors text-left"
+                  :class="cmdIndex === i ? 'bg-g-25' : ''">
+            <span class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" :style="`background: ${c.bg}`">
+              <span class="ic ic-16" :class="c.icon" :style="`color: ${c.color}`"></span>
+            </span>
+            <div class="flex-1 min-w-0">
+              <div class="text-[13px] font-medium text-g-900" x-text="c.label"></div>
+              <div class="text-[11px] text-g-400" x-text="c.group"></div>
+            </div>
+            <span x-show="cmdIndex === i" class="text-[10px] text-g-400">↵ enter</span>
+          </button>
+        </template>
+      </div>
+      <!-- Footer -->
+      <div class="border-t border-g-100 px-5 py-2.5 flex items-center gap-3 bg-g-25 text-[11px] text-g-400">
+        <span class="flex items-center gap-1">
+          <kbd class="font-mono bg-white border border-g-100 rounded px-1.5 py-0.5">↑</kbd>
+          <kbd class="font-mono bg-white border border-g-100 rounded px-1.5 py-0.5">↓</kbd>
+          Navigate
+        </span>
+        <span class="flex items-center gap-1"><kbd class="font-mono bg-white border border-g-100 rounded px-1.5 py-0.5">↵</kbd> Open</span>
+        <div class="flex-1"></div>
+        <span class="flex items-center gap-1"><kbd class="font-mono bg-white border border-g-100 rounded px-1.5 py-0.5">⌘ K</kbd> Toggle</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== New Payment Modal ===== -->
+  <div x-show="newPaymentOpen" x-cloak x-transition.opacity @keydown.escape.window="newPaymentOpen = false"
+       class="fixed inset-0 bg-black/40 z-50 flex items-center justify-center px-4" @click.self="newPaymentOpen = false">
+    <div x-show="newPaymentOpen" x-transition class="bg-white rounded-2xl shadow-pop max-w-[460px] w-full overflow-hidden">
+      <div class="h-16 px-5 border-b border-g-100 flex items-center gap-3">
+        <span class="w-9 h-9 rounded-full bg-p-200 flex items-center justify-center"><span class="ic ic-20 ic-send" style="color:#163300"></span></span>
+        <h2 class="flex-1 text-[16px] font-semibold text-g-900">Send Payment</h2>
+        <button @click="newPaymentOpen = false" class="w-8 h-8 rounded-full hover:bg-g-50 flex items-center justify-center text-g-400">✕</button>
+      </div>
+      <form @submit.prevent="submitNewPayment()" class="p-5 flex flex-col gap-4">
+        <!-- From wallet -->
+        <div>
+          <label class="form-label">From</label>
+          <select class="form-select" x-model="newPayment.from">
+            <template x-for="w in (window.MonefyData?.wallets || [])" :key="w.id">
+              <option :value="w.id" x-text="w.name + ' · •••• ' + w.last4 + ' · $' + w.balance.toLocaleString('en-US', { minimumFractionDigits: 2 })"></option>
+            </template>
+          </select>
+        </div>
+        <!-- Recipient -->
+        <div>
+          <label class="form-label">Recipient</label>
+          <input type="text" class="form-input" x-model="newPayment.recipient" required placeholder="Name, email, or @username" />
+          <p class="form-hint">Recent: Kristin Watson · Guy Hawkins · Robert Fox</p>
+        </div>
+        <!-- Amount -->
+        <div>
+          <label class="form-label">Amount (USD)</label>
+          <input type="number" step="0.01" min="0.01" class="form-input text-[18px] font-semibold" x-model.number="newPayment.amount" required placeholder="0.00" />
+          <div class="flex items-center gap-2 mt-2">
+            <template x-for="amt in [25, 50, 100, 250, 500]" :key="amt">
+              <button type="button" @click="newPayment.amount = amt" class="px-3 py-1 rounded-full border border-g-100 hover:bg-g-25 text-[11px] font-medium text-g-900 transition-colors" x-text="'$' + amt"></button>
+            </template>
+          </div>
+        </div>
+        <!-- Note -->
+        <div>
+          <label class="form-label">Note (optional)</label>
+          <input type="text" class="form-input" x-model="newPayment.note" placeholder="What's this for?" />
+        </div>
+        <!-- Schedule toggle -->
+        <label class="flex items-center gap-2 cursor-pointer">
+          <input type="checkbox" x-model="newPayment.schedule" class="w-4 h-4 accent-s-300" />
+          <span class="text-[13px] text-g-900">Schedule for later</span>
+        </label>
+        <div x-show="newPayment.schedule" x-cloak>
+          <label class="form-label">Send on</label>
+          <input type="date" class="form-input" x-model="newPayment.scheduleDate" />
+        </div>
+        <!-- Actions -->
+        <div class="flex items-center gap-2 pt-2">
+          <button type="button" @click="newPaymentOpen = false" class="flex-1 h-11 rounded-full border border-g-100 text-[14px] font-semibold text-g-900 hover:bg-g-25">Cancel</button>
+          <button type="submit" class="flex-1 h-11 rounded-full bg-p-300 hover:bg-p-200 text-[14px] font-semibold text-s-300">
+            <span x-show="!newPayment.schedule">Send now</span>
+            <span x-show="newPayment.schedule">Schedule payment</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ===== Referral Modal (Earn $90) ===== -->
+  <div x-show="referralOpen" x-cloak x-transition.opacity @keydown.escape.window="referralOpen = false"
+       class="fixed inset-0 bg-black/40 z-50 flex items-center justify-center px-4" @click.self="referralOpen = false">
+    <div x-show="referralOpen" x-transition class="bg-white rounded-2xl shadow-pop max-w-[460px] w-full overflow-hidden">
+      <!-- Hero header -->
+      <div class="relative p-6 overflow-hidden" style="background: linear-gradient(135deg, #163300 0%, #2D5C0F 50%, #455C33 100%);">
+        <div class="absolute inset-0 opacity-30" style="background-image: radial-gradient(circle at 20% 30%, rgba(159,232,112,0.5) 0%, transparent 45%), radial-gradient(circle at 85% 75%, rgba(178,237,141,0.4) 0%, transparent 45%);"></div>
+        <div class="absolute top-6 right-8 w-12 h-12 rounded-2xl bg-p-300/20 backdrop-blur rotate-12"></div>
+        <div class="absolute bottom-4 left-12 w-8 h-8 rounded-full bg-suc-100/30 backdrop-blur"></div>
+        <button @click="referralOpen = false" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-white/15 hover:bg-white/25 backdrop-blur flex items-center justify-center text-white z-10">✕</button>
+        <div class="relative flex flex-col items-center text-center gap-2 py-2">
+          <div class="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center shadow-lg">
+            <span class="ic ic-20 ic-gift text-white" style="width: 28px; height: 28px;"></span>
+          </div>
+          <h2 class="text-[22px] font-semibold tracking-tight2 text-white mt-2">Earn <span class="text-p-300">$90</span> for every friend</h2>
+          <p class="text-[12px] text-white/80 max-w-[300px]">Your friends get $30 when they join, you get $60 when they complete first transaction.</p>
+        </div>
+      </div>
+
+      <!-- Stats -->
+      <div class="grid grid-cols-3 border-b border-g-100">
+        <div class="px-4 py-3 border-r border-g-100 text-center">
+          <div class="text-[10px] uppercase tracking-wider text-g-400 font-medium">Invited</div>
+          <div class="text-[18px] font-semibold text-g-900 mt-1">7</div>
+        </div>
+        <div class="px-4 py-3 border-r border-g-100 text-center">
+          <div class="text-[10px] uppercase tracking-wider text-g-400 font-medium">Joined</div>
+          <div class="text-[18px] font-semibold text-g-900 mt-1">4</div>
+        </div>
+        <div class="px-4 py-3 text-center">
+          <div class="text-[10px] uppercase tracking-wider text-g-400 font-medium">Earned</div>
+          <div class="text-[18px] font-semibold text-suc-200 mt-1">$240</div>
+        </div>
+      </div>
+
+      <div class="p-5 flex flex-col gap-4">
+        <!-- Referral link -->
+        <div>
+          <label class="form-label">Your referral link</label>
+          <div class="flex items-center gap-2">
+            <input type="text" readonly value="https://monefy.app/join/kristin-watson" x-ref="referralLink"
+                   class="form-input font-mono text-[12px]" />
+            <button @click="copyReferral()" class="h-10 px-4 rounded-lg bg-s-300 hover:bg-s-200 text-white text-[13px] font-semibold transition-colors flex items-center gap-1.5 shrink-0">
+              <span class="ic ic-16 ic-copy text-white"></span>
+              <span x-text="copied ? 'Copied!' : 'Copy'"></span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Share buttons (consistent SVG icons matching design system) -->
+        <div>
+          <label class="form-label">Or share via</label>
+          <div class="grid grid-cols-4 gap-2">
+            <button @click="shareTo('email')" class="flex flex-col items-center gap-2 p-3 rounded-lg border border-g-100 hover:bg-g-25 hover:border-g-300 hover:-translate-y-0.5 transition-all group">
+              <span class="w-10 h-10 rounded-full bg-g-50 flex items-center justify-center transition-transform group-hover:scale-110">
+                <span class="ic ic-20 ic-mail text-g-500"></span>
+              </span>
+              <span class="text-[11px] font-semibold text-g-900">Email</span>
+            </button>
+            <button @click="shareTo('whatsapp')" class="flex flex-col items-center gap-2 p-3 rounded-lg border border-g-100 hover:bg-g-25 hover:border-g-300 hover:-translate-y-0.5 transition-all group">
+              <span class="w-10 h-10 rounded-full bg-suc-0 flex items-center justify-center transition-transform group-hover:scale-110">
+                <span class="ic ic-20 ic-message" style="color: #287F6E"></span>
+              </span>
+              <span class="text-[11px] font-semibold text-g-900">WhatsApp</span>
+            </button>
+            <button @click="shareTo('twitter')" class="flex flex-col items-center gap-2 p-3 rounded-lg border border-g-100 hover:bg-g-25 hover:border-g-300 hover:-translate-y-0.5 transition-all group">
+              <span class="w-10 h-10 rounded-full bg-[#E5F0FF] flex items-center justify-center transition-transform group-hover:scale-110">
+                <span class="ic ic-20 ic-share" style="color: #1434CB"></span>
+              </span>
+              <span class="text-[11px] font-semibold text-g-900">Twitter</span>
+            </button>
+            <button @click="shareTo('more')" class="flex flex-col items-center gap-2 p-3 rounded-lg border border-g-100 hover:bg-g-25 hover:border-g-300 hover:-translate-y-0.5 transition-all group">
+              <span class="w-10 h-10 rounded-full bg-por-0 flex items-center justify-center transition-transform group-hover:scale-110">
+                <span class="ic ic-20 ic-more-h" style="color: #936DFF"></span>
+              </span>
+              <span class="text-[11px] font-semibold text-g-900">More</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- How it works -->
+        <div class="bg-g-25 border border-g-100 rounded-xl p-3 flex flex-col gap-2">
+          <div class="text-[11px] uppercase tracking-wider text-g-400 font-semibold">How it works</div>
+          <div class="flex items-center gap-2">
+            <span class="w-5 h-5 rounded-full bg-p-300 text-s-300 flex items-center justify-center text-[10px] font-bold">1</span>
+            <span class="text-[12px] text-g-900">Share your link with friends</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="w-5 h-5 rounded-full bg-p-300 text-s-300 flex items-center justify-center text-[10px] font-bold">2</span>
+            <span class="text-[12px] text-g-900">They sign up using your link</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="w-5 h-5 rounded-full bg-p-300 text-s-300 flex items-center justify-center text-[10px] font-bold">3</span>
+            <span class="text-[12px] text-g-900">Both get rewarded after first transaction</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== Manage Balance Modal ===== -->
+  <div x-show="manageBalanceOpen" x-cloak x-transition.opacity @keydown.escape.window="manageBalanceOpen = false"
+       class="fixed inset-0 bg-black/40 z-50 flex items-center justify-center px-4" @click.self="manageBalanceOpen = false">
+    <div x-show="manageBalanceOpen" x-transition class="bg-white rounded-2xl shadow-pop max-w-[460px] w-full overflow-hidden">
+      <div class="h-16 px-5 border-b border-g-100 flex items-center gap-3">
+        <span class="w-9 h-9 rounded-full bg-suc-0 flex items-center justify-center"><span class="ic ic-20 ic-settings" style="color:#287F6E"></span></span>
+        <h2 class="flex-1 text-[16px] font-semibold text-g-900">Manage Balance</h2>
+        <button @click="manageBalanceOpen = false" class="w-8 h-8 rounded-full hover:bg-g-50 flex items-center justify-center text-g-400">✕</button>
+      </div>
+      <div class="p-5 flex flex-col gap-4">
+        <!-- Action type toggle -->
+        <div class="bg-g-25 rounded-xl p-1 grid grid-cols-2 gap-1">
+          <button @click="manageMode = 'topup'" class="h-10 rounded-lg text-[13px] font-semibold transition-all flex items-center justify-center gap-1.5"
+                  :class="manageMode === 'topup' ? 'bg-white text-g-900 shadow-sm' : 'text-g-400 hover:text-g-900'">
+            <span class="ic ic-16 ic-plus text-suc-200"></span>Top up
+          </button>
+          <button @click="manageMode = 'withdraw'" class="h-10 rounded-lg text-[13px] font-semibold transition-all flex items-center justify-center gap-1.5"
+                  :class="manageMode === 'withdraw' ? 'bg-white text-g-900 shadow-sm' : 'text-g-400 hover:text-g-900'">
+            <span class="ic ic-16 ic-arrow-up" style="color: #95122B"></span>Withdraw
+          </button>
+        </div>
+
+        <form @submit.prevent="submitManageBalance()" class="flex flex-col gap-4">
+          <!-- Account -->
+          <div>
+            <label class="form-label">Account</label>
+            <select class="form-select" x-model="manageData.account">
+              <template x-for="w in (window.MonefyData?.wallets || [])" :key="w.id">
+                <option :value="w.id" x-text="w.name + ' · •••• ' + w.last4 + ' · $' + w.balance.toLocaleString('en-US', { minimumFractionDigits: 2 })"></option>
+              </template>
+            </select>
+          </div>
+          <!-- Amount -->
+          <div>
+            <label class="form-label">Amount (USD)</label>
+            <input type="number" step="0.01" min="0.01" class="form-input text-[18px] font-semibold" x-model.number="manageData.amount" required placeholder="0.00" />
+            <div class="flex items-center gap-2 mt-2">
+              <template x-for="amt in [100, 500, 1000, 5000]" :key="amt">
+                <button type="button" @click="manageData.amount = amt" class="px-3 py-1 rounded-full border border-g-100 hover:bg-g-25 text-[11px] font-medium text-g-900 transition-colors" x-text="'$' + amt"></button>
+              </template>
+            </div>
+          </div>
+          <!-- Method -->
+          <div x-show="manageMode === 'topup'">
+            <label class="form-label">Funding source</label>
+            <select class="form-select" x-model="manageData.method">
+              <option>Bank transfer (1-3 business days)</option>
+              <option>Debit card (instant · 1% fee)</option>
+              <option>Apple Pay / Google Pay</option>
+            </select>
+          </div>
+          <div x-show="manageMode === 'withdraw'">
+            <label class="form-label">Withdraw to</label>
+            <select class="form-select" x-model="manageData.method">
+              <option>Linked bank account (2-3 business days)</option>
+              <option>Debit card (instant · 1% fee)</option>
+            </select>
+          </div>
+
+          <div class="flex items-center gap-2 pt-2">
+            <button type="button" @click="manageBalanceOpen = false" class="flex-1 h-11 rounded-full border border-g-100 text-[14px] font-semibold text-g-900 hover:bg-g-25">Cancel</button>
+            <button type="submit" class="flex-1 h-11 rounded-full bg-p-300 hover:bg-p-200 text-[14px] font-semibold text-s-300" x-text="manageMode === 'topup' ? 'Confirm top up' : 'Confirm withdraw'"></button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  function globalOverlays() {
+    return {
+      // State
+      commandOpen: false, cmdQuery: '', cmdIndex: 0,
+      accountSwitcher: { open: false, x: 0, y: 0 },
+      newPaymentOpen: false,
+      manageBalanceOpen: false,
+      referralOpen: false,
+      copied: false,
+      manageMode: 'topup',
+      newPayment: { from: 'w001', recipient: '', amount: null, note: '', schedule: false, scheduleDate: '' },
+      manageData: { account: 'w001', amount: null, method: 'Bank transfer (1-3 business days)' },
+
+      accounts: [
+        { id: 'p1', name: 'Kristin Watson',  type: 'Personal Account',  avatar: 'assets/avatar-kristin-big.jpg', active: true },
+        { id: 'b1', name: 'Watson Studio',   type: 'Business Account · Pro', avatar: 'assets/avatar-guy.jpg', active: false },
+      ],
+
+      init() {
+        // Expose globally
+        window.openCommand           = () => { this.commandOpen = true; this.cmdQuery = ''; this.cmdIndex = 0; this.$nextTick(() => this.$refs.cmdInput?.focus()); };
+        window.openAccountSwitcher   = (e) => {
+          const r = e.currentTarget.getBoundingClientRect();
+          this.accountSwitcher = { open: true, x: r.left, y: r.bottom + 6 };
+        };
+        window.openNewPayment        = () => { this.newPaymentOpen = true; };
+        window.openManageBalance     = () => { this.manageBalanceOpen = true; };
+        window.openReferral          = () => { this.referralOpen = true; this.copied = false; };
+
+        // Global keyboard shortcuts
+        window.addEventListener('keydown', (e) => {
+          if ((e.key === 'k' || e.key === 'K') && (e.metaKey || e.ctrlKey)) {
+            e.preventDefault();
+            this.commandOpen ? this.commandOpen = false : window.openCommand();
+          }
+        });
+      },
+
+      get cmdItems() {
+        return [
+          // Navigation
+          { id: 'nav-dashboard',    group: 'Navigate', label: 'Go to Dashboard',         icon: 'ic-home',      bg:'#EFFEFA', color:'#287F6E', action: () => location.hash = '#/dashboard' },
+          { id: 'nav-transactions', group: 'Navigate', label: 'Go to Transactions',      icon: 'ic-switch',    bg:'#F4F0FF', color:'#936DFF', action: () => location.hash = '#/transactions' },
+          { id: 'nav-wallet',       group: 'Navigate', label: 'Go to My Wallet',         icon: 'ic-wallet',    bg:'#FFF7E5', color:'#B8860B', action: () => location.hash = '#/wallet' },
+          { id: 'nav-invoices',     group: 'Navigate', label: 'Go to Invoices',          icon: 'ic-clipboard', bg:'#F0FFE5', color:'#287F6E', action: () => location.hash = '#/invoices' },
+          { id: 'nav-reports',      group: 'Navigate', label: 'Go to Reports',           icon: 'ic-pie',       bg:'#FEEFF2', color:'#DF1C41', action: () => location.hash = '#/reports' },
+          { id: 'nav-settings',     group: 'Navigate', label: 'Open Settings',           icon: 'ic-settings',  bg:'#F5F5F5', color:'#525252', action: () => location.hash = '#/settings' },
+          { id: 'nav-help',         group: 'Navigate', label: 'Open Help Center',        icon: 'ic-help',      bg:'#E5F0FF', color:'#1434CB', action: () => location.hash = '#/help' },
+          // Actions
+          { id: 'act-pay',          group: 'Actions',  label: 'Send new payment',        icon: 'ic-send',      bg:'#EFFEFA', color:'#287F6E', action: () => window.openNewPayment() },
+          { id: 'act-balance',      group: 'Actions',  label: 'Manage balance',          icon: 'ic-settings',  bg:'#EFFEFA', color:'#287F6E', action: () => window.openManageBalance() },
+          { id: 'act-invoice',      group: 'Actions',  label: 'Create new invoice',      icon: 'ic-plus',      bg:'#F0FFE5', color:'#287F6E', action: () => { location.hash = '#/invoices'; setTimeout(() => { const r = document.querySelector('#page-content [x-data]'); if (r) Alpine.$data(r).newInvoiceOpen = true; }, 200); } },
+          { id: 'act-export',       group: 'Actions',  label: 'Export transactions',     icon: 'ic-download',  bg:'#F5F5F5', color:'#525252', action: () => { location.hash = '#/transactions'; setTimeout(() => { const r = document.querySelector('#page-content [x-data]'); if (r) Alpine.$data(r).exportData?.(); }, 400); } },
+          { id: 'act-acct',         group: 'Actions',  label: 'Switch account',          icon: 'ic-switch',    bg:'#F4F0FF', color:'#936DFF', action: () => window.toast('Account switcher opens from sidebar', { type: 'info' }) },
+          { id: 'act-signout',      group: 'Actions',  label: 'Sign out',                icon: 'ic-trash',     bg:'#FEEFF2', color:'#95122B', action: () => window.confirmDialog('Sign out of Monefy?', { confirmText: 'Sign out' }).then(ok => { if (ok) window.toast('Signed out (demo)'); }) },
+        ];
+      },
+      get cmdResults() {
+        const q = this.cmdQuery.toLowerCase().trim();
+        if (!q) return this.cmdItems;
+        return this.cmdItems.filter(c => c.label.toLowerCase().includes(q) || c.group.toLowerCase().includes(q));
+      },
+      runCmd(c) {
+        if (!c) return;
+        this.commandOpen = false;
+        c.action();
+      },
+
+      switchAccount(acc) {
+        this.accounts.forEach(a => a.active = (a.id === acc.id));
+        this.accountSwitcher.open = false;
+        window.toast('Switched to ' + acc.name);
+      },
+
+      submitNewPayment() {
+        const wallet = (window.MonefyData?.wallets || []).find(w => w.id === this.newPayment.from);
+        const action = this.newPayment.schedule ? 'scheduled' : 'sent';
+        window.toast(`$${this.newPayment.amount.toFixed(2)} ${action} to ${this.newPayment.recipient}`, {
+          action: { label: 'Undo', onClick: () => window.toast('Payment reversed', { type: 'info' }) }
+        });
+        if (!this.newPayment.schedule && wallet) {
+          wallet.balance -= this.newPayment.amount;
+          wallet.available -= this.newPayment.amount;
+        }
+        this.newPaymentOpen = false;
+        this.newPayment = { from: 'w001', recipient: '', amount: null, note: '', schedule: false, scheduleDate: '' };
+      },
+
+      copyReferral() {
+        const link = this.$refs.referralLink?.value || 'https://monefy.app/join/kristin-watson';
+        navigator.clipboard?.writeText(link);
+        this.copied = true;
+        window.toast('Referral link copied to clipboard!');
+        setTimeout(() => { this.copied = false; }, 2000);
+      },
+
+      shareTo(channel) {
+        const messages = {
+          email: 'Opening email composer…',
+          whatsapp: 'Opening WhatsApp…',
+          twitter: 'Opening Twitter…',
+          more: 'Opening share sheet…',
+        };
+        window.toast(messages[channel] || 'Opening share…', { type: 'info' });
+      },
+
+      submitManageBalance() {
+        const wallet = (window.MonefyData?.wallets || []).find(w => w.id === this.manageData.account);
+        const amt = this.manageData.amount;
+        if (wallet) {
+          if (this.manageMode === 'topup') { wallet.balance += amt; wallet.available += amt; }
+          else { wallet.balance -= amt; wallet.available -= amt; }
+        }
+        window.toast(`$${amt.toFixed(2)} ${this.manageMode === 'topup' ? 'added to' : 'withdrawn from'} ${wallet?.name || 'account'}`);
+        this.manageBalanceOpen = false;
+        this.manageData = { account: 'w001', amount: null, method: 'Bank transfer (1-3 business days)' };
+      },
+    }
+  }
+</script>
+
+<script src="js/data.js"></script>
+<script src="js/app.js"></script>
+<script>
+  function appShell() {
+    return {
+      route: 'dashboard',
+      ROUTES: window.Monefy?.ROUTES || {},
+      mainMenu: window.Monefy?.MAIN_MENU || [],
+      prefMenu: window.Monefy?.PREFERENCE_MENU || [],
+      init() {
+        // Sync ROUTES/menu lists once app.js has executed
+        this.ROUTES   = window.Monefy.ROUTES;
+        this.mainMenu = window.Monefy.MAIN_MENU;
+        this.prefMenu = window.Monefy.PREFERENCE_MENU;
+        this.route = window.Monefy.currentRoute();
+        window.addEventListener('hashchange', () => {
+          this.route = window.Monefy.currentRoute();
+        });
+      }
+    }
+  }
+</script>
+</body>
+</html>
